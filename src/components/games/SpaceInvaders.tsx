@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
-import { Trophy } from 'lucide-react';
+import { Trophy, Pause, Play, RefreshCw } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Joystick } from '@/components/Joystick';
 
@@ -26,6 +26,7 @@ export const SpaceInvaders = () => {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [gameOver, setGameOver] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
   
   const keysPressed = useRef<{ [key: string]: boolean }>({}).current;
   const gameLoopRef = useRef<number>();
@@ -56,15 +57,26 @@ export const SpaceInvaders = () => {
     setScore(0);
     setLives(3);
     setGameOver(false);
+    setIsPaused(false);
   }, [createInvaders]);
 
+  const togglePause = useCallback(() => {
+    if (!gameOver) {
+      setIsPaused(p => !p);
+    }
+  }, [gameOver]);
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => { keysPressed[e.key] = true; }, [keysPressed]);
+  
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    if (e.key === ' ' && !gameOver) {
+    if (e.key === ' ' && !gameOver && !isPaused) {
       setPlayerBullets(b => [...b, { x: playerX + PLAYER_WIDTH / 2 - 2, y: GAME_HEIGHT - PLAYER_HEIGHT }]);
     }
+    if (e.key.toLowerCase() === 'p') {
+      togglePause();
+    }
     delete keysPressed[e.key];
-  }, [keysPressed, gameOver, playerX]);
+  }, [keysPressed, gameOver, isPaused, playerX, togglePause]);
   
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -76,14 +88,14 @@ export const SpaceInvaders = () => {
   }, [handleKeyDown, handleKeyUp]);
 
   const handleJoystickMove = (dir: 'left' | 'right' | 'up' | 'down' | 'center') => {
-      if(gameOver) return;
+      if(gameOver || isPaused) return;
       if (dir === 'left') setPlayerX(x => Math.max(0, x - 10));
       if (dir === 'right') setPlayerX(x => Math.min(GAME_WIDTH - PLAYER_WIDTH, x + 10));
       if (dir === 'up') setPlayerBullets(b => [...b, { x: playerX + PLAYER_WIDTH / 2 - 2, y: GAME_HEIGHT - PLAYER_HEIGHT }]);
   }
 
   const gameLoop = useCallback(() => {
-    if (gameOver) return;
+    if (gameOver || isPaused) return;
 
     // Player movement
     if (keysPressed['ArrowLeft']) setPlayerX(x => Math.max(0, x - 5));
@@ -155,13 +167,13 @@ export const SpaceInvaders = () => {
     }
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameOver, keysPressed, invaderDirection, invaders, createInvaders, invaderBullets, playerX, lives, updateScore, score]);
+  }, [gameOver, isPaused, keysPressed, invaderDirection, invaders, createInvaders, invaderBullets, playerX, lives, updateScore, score]);
   
   useEffect(() => {
-    if (gameOver) return;
+    if (gameOver || isPaused) return;
     gameLoopRef.current = requestAnimationFrame(gameLoop);
     return () => { if(gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); };
-  }, [gameOver, gameLoop]);
+  }, [gameOver, isPaused, gameLoop]);
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -177,6 +189,12 @@ export const SpaceInvaders = () => {
                 <Button onClick={resetGame} className="mt-4" variant="outline">Play Again</Button>
             </div>
         )}
+        {isPaused && !gameOver && (
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 text-white">
+                <h2 className="text-4xl font-bold font-headline">Paused</h2>
+                <Button onClick={togglePause} className="mt-4" variant="outline">Resume</Button>
+            </div>
+        )}
         {/* Player */}
         <div className="absolute bg-cyan-400" style={{ left: playerX, bottom: 0, width: PLAYER_WIDTH, height: PLAYER_HEIGHT }} />
         {/* Invaders */}
@@ -185,7 +203,21 @@ export const SpaceInvaders = () => {
         {playerBullets.map((b, i) => <div key={i} className="absolute bg-cyan-400" style={{ left: b.x, top: b.y, width: 4, height: 10 }} />)}
         {invaderBullets.map((b, i) => <div key={i} className="absolute bg-red-500" style={{ left: b.x, top: b.y, width: 4, height: 10 }} />)}
       </div>
-      <p className="text-sm text-muted-foreground">Use Arrow Keys to move and Space to shoot.</p>
+       <div className="w-full flex flex-col items-center gap-2">
+         {!gameOver && (
+          <div className="flex gap-2 justify-center">
+            <Button onClick={togglePause} variant="outline" disabled={gameOver}>
+                {isPaused ? <Play /> : <Pause />}
+                <span className="ml-2">{isPaused ? 'Resume' : 'Pause'}</span>
+            </Button>
+            <Button onClick={resetGame} variant="destructive">
+                <RefreshCw />
+                <span className="ml-2">Restart</span>
+            </Button>
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground">Use Arrow Keys to move, Space to shoot, and P to pause.</p>
+      </div>
       {isMobile && <Joystick onMove={handleJoystickMove} />}
     </div>
   );

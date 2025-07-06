@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useGame } from '@/context/GameContext';
-import { Trophy } from 'lucide-react';
+import { Trophy, Pause, Play, RefreshCw } from 'lucide-react';
 
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
@@ -22,6 +22,7 @@ export const Asteroids = () => {
   const [gameOver, setGameOver] = useState(false);
   const [level, setLevel] = useState(1);
   const [invincible, setInvincible] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   const keysPressed = useRef<{ [key: string]: boolean }>({}).current;
   const gameLoopRef = useRef<number>();
@@ -49,11 +50,18 @@ export const Asteroids = () => {
     setGameOver(false);
     setLevel(1);
     createAsteroids(4);
+    setIsPaused(false);
   }, [createAsteroids]);
+
+  const togglePause = useCallback(() => {
+      if (!gameOver) {
+          setIsPaused(p => !p);
+      }
+  }, [gameOver]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => { keysPressed[e.key] = true; }, [keysPressed]);
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    if (e.key === ' ' && !gameOver) {
+    if (e.key === ' ' && !gameOver && !isPaused) {
       setBullets(b => [...b, {
         x: ship.x, y: ship.y,
         dx: Math.sin(ship.rotation! * Math.PI / 180) * BULLET_SPEED,
@@ -61,8 +69,11 @@ export const Asteroids = () => {
         size: 5,
       }]);
     }
+    if (e.key.toLowerCase() === 'p') {
+        togglePause();
+    }
     delete keysPressed[e.key];
-  }, [keysPressed, ship, gameOver]);
+  }, [keysPressed, ship, gameOver, isPaused, togglePause]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -74,7 +85,7 @@ export const Asteroids = () => {
   }, [handleKeyDown, handleKeyUp]);
 
   const gameLoop = useCallback(() => {
-    if (gameOver) return;
+    if (gameOver || isPaused) return;
 
     // Ship movement
     setShip(s => {
@@ -155,7 +166,7 @@ export const Asteroids = () => {
 
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameOver, keysPressed, bullets, asteroids, ship, invincible, lives, score, level, createAsteroids, updateScore]);
+  }, [gameOver, isPaused, keysPressed, bullets, asteroids, ship, invincible, lives, score, level, createAsteroids, updateScore]);
 
   useEffect(() => {
     resetGame();
@@ -182,6 +193,12 @@ export const Asteroids = () => {
                 <Button onClick={resetGame} className="mt-4" variant="outline">Play Again</Button>
             </div>
         )}
+        {isPaused && !gameOver && (
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 text-white">
+                <h2 className="text-4xl font-bold font-headline">Paused</h2>
+                <Button onClick={togglePause} className="mt-4" variant="outline">Resume</Button>
+            </div>
+        )}
         {/* Ship */}
         {!gameOver && <div className="absolute" style={{ left: ship.x, top: ship.y, transform: `translate(-50%, -50%) rotate(${ship.rotation}deg)` }}>
           <svg width={SHIP_SIZE} height={SHIP_SIZE} viewBox="0 0 20 20" className={invincible ? "animate-pulse" : ""}>
@@ -197,7 +214,21 @@ export const Asteroids = () => {
           <div key={i} className="absolute bg-fuchsia-500 rounded-full" style={{ left: b.x - b.size/2, top: b.y - b.size/2, width: b.size, height: b.size }}/>
         ))}
       </div>
-      <p className="text-sm text-muted-foreground">Use Arrow Keys to move and Space to shoot.</p>
+      <div className="w-full flex flex-col items-center gap-2">
+        {!gameOver && (
+          <div className="flex gap-2 justify-center">
+            <Button onClick={togglePause} variant="outline" disabled={gameOver}>
+                {isPaused ? <Play /> : <Pause />}
+                <span className="ml-2">{isPaused ? 'Resume' : 'Pause'}</span>
+            </Button>
+            <Button onClick={resetGame} variant="destructive">
+                <RefreshCw />
+                <span className="ml-2">Restart</span>
+            </Button>
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground">Use Arrow Keys to move, Space to shoot, and P to pause.</p>
+      </div>
     </div>
   );
 };
