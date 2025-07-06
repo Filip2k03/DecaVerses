@@ -1,11 +1,13 @@
+
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Ship, Target, Waves, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const GRID_SIZE = 10;
 type CellState = 'empty' | 'ship' | 'hit' | 'miss';
@@ -28,9 +30,12 @@ const Battleship = () => {
   const [currentShipIndex, setCurrentShipIndex] = useState(0);
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
   const [winner, setWinner] = useState<'Player' | 'Opponent' | null>(null);
-  const [playerShipsSunk, setPlayerShipsSunk] = useState(0);
-  const [opponentShipsSunk, setOpponentShipsSunk] = useState(0);
+  const [playerHits, setPlayerHits] = useState(0);
+  const [opponentHits, setOpponentHits] = useState(0);
   const [turnMessage, setTurnMessage] = useState<string>('');
+  const { toast } = useToast();
+
+  const totalShipParts = useMemo(() => SHIPS.reduce((sum, ship) => sum + ship.size, 0), []);
 
   useEffect(() => {
     if (gameState === 'placement' && currentShipIndex >= SHIPS.length) {
@@ -41,30 +46,36 @@ const Battleship = () => {
   }, [currentShipIndex, gameState]);
 
   useEffect(() => {
-    if (opponentShipsSunk === SHIPS.length) {
+    if (opponentHits === totalShipParts) {
       setWinner('Player');
       setGameState('gameover');
     }
-    if (playerShipsSunk === SHIPS.length) {
+    if (playerHits === totalShipParts) {
       setWinner('Opponent');
       setGameState('gameover');
     }
-  }, [playerShipsSunk, opponentShipsSunk]);
+  }, [playerHits, opponentHits, totalShipParts]);
 
   const placeOpponentShips = () => {
     let opponentGridWithShips = createEmptyGrid();
-    SHIPS.forEach(ship => {
+    for (const ship of SHIPS) {
       let placed = false;
-      while (!placed) {
+      let attempts = 0;
+      while (!placed && attempts < 100) {
         const isHorizontal = Math.random() < 0.5;
-        const col = Math.floor(Math.random() * (GRID_SIZE - (isHorizontal ? ship.size : 0)));
-        const row = Math.floor(Math.random() * (GRID_SIZE - (isHorizontal ? 0 : ship.size)));
+        const col = Math.floor(Math.random() * (GRID_SIZE - (isHorizontal ? ship.size - 1 : 0)));
+        const row = Math.floor(Math.random() * (GRID_SIZE - (isHorizontal ? 0 : ship.size - 1)));
         if (canPlaceShip(opponentGridWithShips, ship.size, col, row, isHorizontal ? 'horizontal' : 'vertical')) {
           opponentGridWithShips = placeShip(opponentGridWithShips, ship.size, col, row, isHorizontal ? 'horizontal' : 'vertical');
           placed = true;
         }
+        attempts++;
       }
-    });
+      if (!placed) {
+        // This is a failsafe. On a 10x10 grid this should not be an issue.
+        console.error("Could not place opponent ship:", ship.name);
+      }
+    }
     setOpponentGrid(opponentGridWithShips);
   };
   
@@ -96,28 +107,33 @@ const Battleship = () => {
       setPlayerGrid(placeShip(playerGrid, ship.size, col, row, orientation));
       setCurrentShipIndex(prev => prev + 1);
     } else {
-      // In a real app, use a toast notification instead of an alert.
-      alert("Cannot place ship here. It's either out of bounds or overlapping another ship.");
+      toast({
+        title: "Invalid Placement",
+        description: "You can't place a ship there. It's either out of bounds or overlapping another ship.",
+        variant: "destructive",
+      });
     }
   };
 
   const opponentTurn = () => {
     setTurnMessage("Opponent is thinking...");
     let fired = false;
-    while (!fired) {
+    let attempts = 0;
+    while (!fired && attempts < 100) {
       const col = Math.floor(Math.random() * GRID_SIZE);
       const row = Math.floor(Math.random() * GRID_SIZE);
       if (playerGrid[row][col] !== 'hit' && playerGrid[row][col] !== 'miss') {
         const newPlayerGrid = playerGrid.map(r => [...r]);
         if (newPlayerGrid[row][col] === 'ship') {
           newPlayerGrid[row][col] = 'hit';
-          if (isShipSunk(newPlayerGrid, col, row)) setPlayerShipsSunk(prev => prev + 1);
+          setPlayerHits(h => h + 1);
         } else {
           newPlayerGrid[row][col] = 'miss';
         }
         setPlayerGrid(newPlayerGrid);
         fired = true;
       }
+      attempts++;
     }
     setTurnMessage("Your turn! Fire at the opponent's grid.");
   };
@@ -126,9 +142,9 @@ const Battleship = () => {
     if (gameState !== 'battle' || opponentGrid[row][col] === 'hit' || opponentGrid[row][col] === 'miss' || winner) return;
     
     const newOpponentGrid = opponentGrid.map(r => [...r]);
-    if (opponentGrid[row][col] === 'ship') {
+    if (newOpponentGrid[row][col] === 'ship') {
         newOpponentGrid[row][col] = 'hit';
-        if (isShipSunk(newOpponentGrid, col, row)) setOpponentShipsSunk(prev => prev + 1);
+        setOpponentHits(h => h + 1);
     } else {
         newOpponentGrid[row][col] = 'miss';
     }
@@ -139,12 +155,6 @@ const Battleship = () => {
     }
   };
 
-  const isShipSunk = (grid: Grid, col: number, row: number): boolean => {
-    // This is a simplified check. A full check would need to identify the specific ship.
-    // This approximation increments the sunk count on every hit.
-    return true; 
-  };
-
   const resetGame = () => {
     setPlayerGrid(createEmptyGrid());
     setOpponentGrid(createEmptyGrid());
@@ -152,8 +162,8 @@ const Battleship = () => {
     setCurrentShipIndex(0);
     setOrientation('horizontal');
     setWinner(null);
-    setPlayerShipsSunk(0);
-    setOpponentShipsSunk(0);
+    setPlayerHits(0);
+    setOpponentHits(0);
     setTurnMessage('');
   };
 
@@ -225,21 +235,18 @@ const Battleship = () => {
         <Card>
             <CardContent className="p-4 flex justify-around text-center">
                 <div>
-                    <p className="font-bold text-lg">{playerShipsSunk}/{SHIPS.length}</p>
-                    <p className="text-sm text-muted-foreground">Player Ships Sunk</p>
+                    <p className="font-bold text-lg">{playerHits}/{totalShipParts}</p>
+                    <p className="text-sm text-muted-foreground">Player Ship Parts Hit</p>
                 </div>
                 <div>
-                    <p className="font-bold text-lg">{opponentShipsSunk}/{SHIPS.length}</p>
-                    <p className="text-sm text-muted-foreground">Opponent Ships Sunk</p>
+                    <p className="font-bold text-lg">{opponentHits}/{totalShipParts}</p>
+                    <p className="text-sm text-muted-foreground">Opponent Ship Parts Hit</p>
                 </div>
             </CardContent>
         </Card>
 
         <Button onClick={resetGame} className="w-full">New Game</Button>
       </div>
-       <p className="text-sm text-muted-foreground max-w-md text-center">
-        Note: This is a simplified version of Battleship. The opponent plays randomly and ship sinking logic is approximated.
-      </p>
     </div>
   );
 };
