@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useGame } from '@/context/GameContext';
-import { Trophy, Award, CarFront, Rocket } from 'lucide-react';
+import { Trophy, Award, CarFront, Rocket, PackageCheck } from 'lucide-react';
 import { AlienIcon, BearIcon, ClawMachineIcon } from '@/components/GameIcons';
 
 const GAME_WIDTH = 400;
@@ -28,9 +28,10 @@ type Prize = {
   x: number;
   y: number;
   captured: boolean;
+  rotation: number;
 };
 
-type ClawState = 'ready' | 'moving' | 'dropping' | 'grabbing' | 'rising' | 'returning';
+type ClawState = 'ready' | 'moving' | 'dropping' | 'grabbing' | 'rising' | 'returning' | 'releasing';
 
 export function ClawMachine() {
   const [gameState, setGameState] = useState<'playing' | 'gameover'>('playing');
@@ -55,9 +56,10 @@ export function ClawMachine() {
       newPrizes.push({
         id: i,
         type,
-        x: Math.random() * (GAME_WIDTH - size),
-        y: GAME_HEIGHT - size - Math.random() * (GAME_HEIGHT / 2),
+        x: Math.random() * (GAME_WIDTH - size * 2) + size,
+        y: GAME_HEIGHT - size - Math.random() * (GAME_HEIGHT / 2.5),
         captured: false,
+        rotation: Math.random() * 40 - 20,
       });
     }
     setPrizes(newPrizes);
@@ -65,7 +67,7 @@ export function ClawMachine() {
     setAttemptsLeft(INITIAL_ATTEMPTS);
     setGameState('playing');
     setClawState('moving');
-    setClawPos({ x: 0, y: 20 });
+    setClawPos({ x: GAME_WIDTH / 2, y: 20 });
     setClawDirection(1);
     setCapturedPrize(null);
     setMessage('Drop the claw to grab a prize!');
@@ -76,7 +78,7 @@ export function ClawMachine() {
   }, [resetGame]);
 
   const handleDrop = () => {
-    if (clawState === 'moving' && attemptsLeft > 0) {
+    if (clawState === 'moving' && attemptsLeft > 0 && gameState === 'playing') {
       setClawState('dropping');
       setAttemptsLeft(prev => prev - 1);
     }
@@ -87,7 +89,6 @@ export function ClawMachine() {
 
     let interval: NodeJS.Timeout;
     
-    // Horizontal movement
     if (clawState === 'moving') {
       interval = setInterval(() => {
         setClawPos(prev => {
@@ -100,7 +101,6 @@ export function ClawMachine() {
       }, 20);
     }
     
-    // Vertical movement
     if (clawState === 'dropping' || clawState === 'rising') {
        interval = setInterval(() => {
          setClawPos(prev => {
@@ -123,7 +123,6 @@ export function ClawMachine() {
        }, 20);
     }
     
-    // State transitions
     if (clawState === 'grabbing') {
         setClawOpen(false);
         setTimeout(() => {
@@ -132,8 +131,10 @@ export function ClawMachine() {
             prizes.forEach(p => {
                 if (!p.captured) {
                     const prizeCenterX = p.x + prizeTypes[p.type].size / 2;
-                    const dist = Math.abs(clawCenterX - prizeCenterX);
-                    if (dist < prizeTypes[p.type].size / 2 && clawPos.y > p.y - 20) {
+                    const prizeCenterY = p.y + prizeTypes[p.type].size / 2;
+                    const dist = Math.sqrt(Math.pow(clawCenterX - prizeCenterX, 2) + Math.pow(clawPos.y + 20 - prizeCenterY, 2));
+
+                    if (dist < prizeTypes[p.type].size) {
                         prizeToGrab = p;
                     }
                 }
@@ -150,22 +151,43 @@ export function ClawMachine() {
     }
 
     if (clawState === 'returning') {
+        interval = setInterval(() => {
+            setClawPos(prev => {
+                const targetX = 30; // Chute position
+                const newX = prev.x + (prev.x > targetX ? -CLAW_SPEED_X : CLAW_SPEED_X);
+                if (Math.abs(newX - targetX) < CLAW_SPEED_X) {
+                    setClawState('releasing');
+                    return { ...prev, x: targetX };
+                }
+                if (capturedPrize) {
+                    setCapturedPrize(p => p ? {...p, x: newX } : null);
+                }
+                return { ...prev, x: newX };
+            });
+        }, 20);
+    }
+
+    if (clawState === 'releasing') {
         setTimeout(() => {
             if (capturedPrize) {
                 const prizePoints = prizeTypes[capturedPrize.type].points;
                 setScore(s => s + prizePoints);
-                setPrizes(p => p.filter(pr => pr.id !== capturedPrize.id));
+                setPrizes(p => p.map(pr => pr.id === capturedPrize.id ? { ...pr, captured: true } : pr));
                 setMessage(`+${prizePoints} points!`);
                 setCapturedPrize(null);
             }
             setClawOpen(true);
-            if(attemptsLeft > 0) {
-                setClawState('moving');
-            } else {
-                setGameState('gameover');
-                setMessage(`Game Over! Final Score: ${score}`);
-                updateScore(9, score);
-            }
+
+            setTimeout(() => {
+                if (attemptsLeft > 0) {
+                    setClawState('moving');
+                } else {
+                    setGameState('gameover');
+                    const finalScore = score + (capturedPrize ? prizeTypes[capturedPrize.type].points : 0);
+                    setMessage(`Game Over! Final Score: ${finalScore}`);
+                    updateScore(9, finalScore);
+                }
+            }, 500);
         }, 500);
     }
 
@@ -175,11 +197,12 @@ export function ClawMachine() {
 
   const PrizeComponent = useMemo(() => {
     return prizes.map(prize => {
-      if (capturedPrize && capturedPrize.id === prize.id) return null;
+      if (prize.captured || (capturedPrize && capturedPrize.id === prize.id)) return null;
       const Icon = prizeTypes[prize.type].icon;
+      const size = prizeTypes[prize.type].size;
       return (
-        <div key={prize.id} className="absolute transition-all" style={{ left: prize.x, top: prize.y }}>
-          <Icon className="text-primary-foreground drop-shadow-lg" size={prizeTypes[prize.type].size} />
+        <div key={prize.id} className="absolute transition-all" style={{ left: prize.x, top: prize.y, width: size, height: size }}>
+          <Icon className="text-primary-foreground drop-shadow-[0_4px_3px_rgba(0,0,0,0.6)]" style={{width: '100%', height: '100%', transform: `rotate(${prize.rotation}deg)`}} />
         </div>
       );
     });
@@ -188,9 +211,10 @@ export function ClawMachine() {
   const CapturedPrizeComponent = useMemo(() => {
       if (!capturedPrize) return null;
       const Icon = prizeTypes[capturedPrize.type].icon;
+      const size = prizeTypes[capturedPrize.type].size;
       return (
-           <div className="absolute transition-all" style={{ left: capturedPrize.x, top: capturedPrize.y }}>
-             <Icon className="text-primary-foreground drop-shadow-lg" size={prizeTypes[capturedPrize.type].size} />
+           <div className="absolute transition-all" style={{ left: capturedPrize.x, top: capturedPrize.y, width: size, height: size }}>
+             <Icon className="text-primary-foreground drop-shadow-lg" style={{width: '100%', height: '100%'}} />
            </div>
       );
   }, [capturedPrize]);
@@ -198,27 +222,49 @@ export function ClawMachine() {
   return (
     <div className="flex flex-col items-center gap-4">
       <div
-        className="relative bg-primary/10 rounded-lg overflow-hidden border-4 border-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.5)]"
+        className="relative bg-gradient-to-b from-blue-900/30 to-background rounded-lg overflow-hidden border-4 border-primary/50 shadow-[0_0_30px_hsl(var(--primary)/0.5)] [perspective:1000px]"
         style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}
       >
-        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background/50 to-transparent z-10" />
+        {/* Back Wall */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-transparent to-background/50" 
+             style={{ backgroundImage: 'linear-gradient(hsl(var(--primary)/0.1) 1px, transparent 1px), linear-gradient(to right, hsl(var(--primary)/0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
+        
         {/* Prize Pit */}
-        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-black/30">
+        <div className="absolute bottom-0 left-0 w-full h-2/3 bg-black/40 [transform-style:preserve-3d] [transform:translateY(25%)_rotateX(55deg)]">
              {PrizeComponent}
              {CapturedPrizeComponent}
         </div>
         
+        {/* Gantry */}
+        <div className="absolute top-2 left-0 w-full h-4 [transform-style:preserve-3d]" style={{transform: `translateX(${clawPos.x}px) translateZ(-20px)`}}>
+            <div className="absolute w-12 h-4 bg-muted rounded-t-md left-1/2 -translate-x-1/2" />
+        </div>
+
         {/* Claw */}
-        <div className="absolute z-20" style={{ left: clawPos.x, top: clawPos.y, width: 40, height: 40 }}>
+        <div className="absolute z-20 transition-transform duration-500" style={{ left: clawPos.x, top: 0, width: 40, height: GAME_HEIGHT, transform: `translateZ(50px) rotateX(${(clawState === 'moving' ? Math.sin(clawPos.x / 20) * 5 : 0)}deg)` }}>
             {/* Claw arm */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-1 bg-muted-foreground" style={{ height: clawPos.y }} />
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1 bg-gradient-to-b from-muted to-muted/50 origin-top" style={{ height: clawPos.y }} />
             {/* Claw mechanism */}
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-12 h-4 bg-muted rounded-full" />
-            <ClawMachineIcon className={cn("w-10 h-10 text-accent transition-transform", !clawOpen && "rotate-180 scale-125")} />
+            <div className="absolute left-1/2 -translate-x-1/2 w-8 h-4 bg-muted rounded-full shadow-inner" style={{top: clawPos.y}} />
+            <div className="absolute" style={{top: clawPos.y + 10, left: 0}}>
+                <ClawMachineIcon className={cn("w-10 h-10 text-accent transition-transform duration-500", !clawOpen && "rotate-180 scale-y-125")} />
+            </div>
         </div>
         
+        {/* Prize Chute */}
+        <div className="absolute top-0 left-0 w-24 h-full bg-black/30 z-10">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-20 h-20 rounded-lg bg-primary/20 flex items-center justify-center">
+                <PackageCheck className="w-10 h-10 text-primary animate-pulse" />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/30 to-transparent rounded-lg"/>
+            </div>
+            <p className="absolute bottom-28 text-center w-full text-sm font-headline text-primary/70">PRIZE</p>
+        </div>
+
+        {/* Glass glare */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/10 via-transparent to-white/5 rounded-lg" />
+        
         {gameState === 'gameover' && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30">
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 animate-in fade-in">
                 <h2 className="text-3xl font-bold text-destructive-foreground font-headline">Game Over</h2>
                 <p className="text-xl text-primary-foreground">Final Score: {score}</p>
                 <Button onClick={resetGame} className="mt-4">Play Again</Button>
