@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useGame } from '@/context/GameContext';
-import { Trophy, Award, CarFront, Rocket, PackageCheck } from 'lucide-react';
+import { Trophy, Award, CarFront, Rocket, PackageCheck, ArrowLeft, ArrowRight } from 'lucide-react';
 import { AlienIcon, BearIcon, ClawMachineIcon } from '@/components/GameIcons';
 
 const GAME_WIDTH = 400;
 const GAME_HEIGHT = 400;
-const CLAW_SPEED_X = 2;
+const CLAW_SPEED_X = 3;
 const CLAW_SPEED_Y = 4;
 const INITIAL_ATTEMPTS = 10;
 const PRIZE_COUNT = 15;
@@ -31,22 +31,22 @@ type Prize = {
   rotation: number;
 };
 
-type ClawState = 'ready' | 'moving' | 'dropping' | 'grabbing' | 'rising' | 'returning' | 'releasing';
+type ClawState = 'ready' | 'dropping' | 'grabbing' | 'rising' | 'returning' | 'releasing' | 'resetting';
 
 export function ClawMachine() {
   const [gameState, setGameState] = useState<'playing' | 'gameover'>('playing');
   const [prizes, setPrizes] = useState<Prize[]>([]);
-  const [clawPos, setClawPos] = useState({ x: 0, y: 20 });
-  const [clawState, setClawState] = useState<ClawState>('moving');
+  const [clawPos, setClawPos] = useState({ x: GAME_WIDTH / 2 - 20, y: 20 });
+  const [clawState, setClawState] = useState<ClawState>('ready');
   const [clawOpen, setClawOpen] = useState(true);
-  const [clawDirection, setClawDirection] = useState(1);
   const [capturedPrize, setCapturedPrize] = useState<Prize | null>(null);
   const [score, setScore] = useState(0);
   const [attemptsLeft, setAttemptsLeft] = useState(INITIAL_ATTEMPTS);
-  const [message, setMessage] = useState('Drop the claw to grab a prize!');
+  const [message, setMessage] = useState('Position the claw and drop it!');
 
   const { scores, updateScore } = useGame();
   const highScore = scores[9] || 0;
+  const moveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetGame = useCallback(() => {
     const newPrizes: Prize[] = [];
@@ -66,11 +66,10 @@ export function ClawMachine() {
     setScore(0);
     setAttemptsLeft(INITIAL_ATTEMPTS);
     setGameState('playing');
-    setClawState('moving');
-    setClawPos({ x: GAME_WIDTH / 2, y: 20 });
-    setClawDirection(1);
+    setClawState('ready');
+    setClawPos({ x: GAME_WIDTH / 2 - 20, y: 20 });
     setCapturedPrize(null);
-    setMessage('Drop the claw to grab a prize!');
+    setMessage('Position the claw and drop it!');
   }, []);
 
   useEffect(() => {
@@ -78,9 +77,30 @@ export function ClawMachine() {
   }, [resetGame]);
 
   const handleDrop = () => {
-    if (clawState === 'moving' && attemptsLeft > 0 && gameState === 'playing') {
+    if (clawState === 'ready' && attemptsLeft > 0 && gameState === 'playing') {
       setClawState('dropping');
       setAttemptsLeft(prev => prev - 1);
+    }
+  };
+
+  const handleMoveStart = (direction: 'left' | 'right') => {
+    if (clawState !== 'ready' || moveIntervalRef.current) return;
+
+    moveIntervalRef.current = setInterval(() => {
+      setClawPos(prev => {
+        const newX = prev.x + (direction === 'left' ? -CLAW_SPEED_X : CLAW_SPEED_X);
+        if (newX >= 0 && newX <= GAME_WIDTH - 40) {
+          return { ...prev, x: newX };
+        }
+        return prev;
+      });
+    }, 20);
+  };
+
+  const handleMoveEnd = () => {
+    if (moveIntervalRef.current) {
+      clearInterval(moveIntervalRef.current);
+      moveIntervalRef.current = null;
     }
   };
 
@@ -88,18 +108,6 @@ export function ClawMachine() {
     if (gameState !== 'playing') return;
 
     let interval: NodeJS.Timeout;
-    
-    if (clawState === 'moving') {
-      interval = setInterval(() => {
-        setClawPos(prev => {
-          const newX = prev.x + CLAW_SPEED_X * clawDirection;
-          if (newX <= 0 || newX >= GAME_WIDTH - 40) {
-            setClawDirection(d => -d);
-          }
-          return { ...prev, x: newX };
-        });
-      }, 20);
-    }
     
     if (clawState === 'dropping' || clawState === 'rising') {
        interval = setInterval(() => {
@@ -180,7 +188,7 @@ export function ClawMachine() {
 
             setTimeout(() => {
                 if (attemptsLeft > 0) {
-                    setClawState('moving');
+                    setClawState('resetting');
                 } else {
                     setGameState('gameover');
                     const finalScore = score + (capturedPrize ? prizeTypes[capturedPrize.type].points : 0);
@@ -191,8 +199,28 @@ export function ClawMachine() {
         }, 500);
     }
 
-    return () => clearInterval(interval);
-  }, [clawState, clawDirection, clawPos.x, clawPos.y, prizes, capturedPrize, gameState, attemptsLeft, score, updateScore]);
+     if (clawState === 'resetting') {
+        interval = setInterval(() => {
+            setClawPos(prev => {
+                const targetX = GAME_WIDTH / 2 - 20;
+                if (Math.abs(prev.x - targetX) < CLAW_SPEED_X) {
+                    setClawState('ready');
+                    return { ...prev, x: targetX };
+                }
+                const newX = prev.x + (prev.x > targetX ? -CLAW_SPEED_X : CLAW_SPEED_X);
+                return { ...prev, x: newX };
+            });
+        }, 20);
+    }
+
+
+    return () => {
+        clearInterval(interval);
+        if (moveIntervalRef.current) {
+            clearInterval(moveIntervalRef.current);
+        }
+    };
+  }, [clawState, clawPos.x, clawPos.y, prizes, capturedPrize, gameState, attemptsLeft, score, updateScore]);
 
 
   const PrizeComponent = useMemo(() => {
@@ -241,7 +269,7 @@ export function ClawMachine() {
         </div>
 
         {/* Claw */}
-        <div className="absolute z-20 transition-transform duration-500" style={{ left: clawPos.x, top: 0, width: 40, height: GAME_HEIGHT, transform: `translateZ(50px) rotateX(${(clawState === 'moving' ? Math.sin(clawPos.x / 20) * 5 : 0)}deg)` }}>
+        <div className="absolute z-20 transition-transform duration-500" style={{ left: clawPos.x, top: 0, width: 40, height: GAME_HEIGHT, transform: `translateZ(50px)` }}>
             {/* Claw arm */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1 bg-gradient-to-b from-muted to-muted/50 origin-top" style={{ height: clawPos.y }} />
             {/* Claw mechanism */}
@@ -273,9 +301,39 @@ export function ClawMachine() {
       </div>
 
       <div className="w-full max-w-sm space-y-3">
-        <Button onClick={handleDrop} disabled={clawState !== 'moving' || gameState === 'gameover'} className="w-full text-lg font-bold" size="lg">
+        <Button onClick={handleDrop} disabled={clawState !== 'ready' || gameState === 'gameover'} className="w-full text-lg font-bold" size="lg">
           DROP CLAW
         </Button>
+        
+        <div className="grid grid-cols-2 gap-2">
+            <Button
+                variant="outline"
+                className="h-14"
+                disabled={clawState !== 'ready'}
+                onMouseDown={() => handleMoveStart('left')}
+                onMouseUp={handleMoveEnd}
+                onMouseLeave={handleMoveEnd}
+                onTouchStart={(e) => { e.preventDefault(); handleMoveStart('left'); }}
+                onTouchEnd={handleMoveEnd}
+            >
+                <ArrowLeft className="h-6 w-6" />
+                <span className="sr-only">Move Left</span>
+            </Button>
+            <Button
+                variant="outline"
+                className="h-14"
+                disabled={clawState !== 'ready'}
+                onMouseDown={() => handleMoveStart('right')}
+                onMouseUp={handleMoveEnd}
+                onMouseLeave={handleMoveEnd}
+                onTouchStart={(e) => { e.preventDefault(); handleMoveStart('right'); }}
+                onTouchEnd={handleMoveEnd}
+            >
+                <ArrowRight className="h-6 w-6" />
+                <span className="sr-only">Move Right</span>
+            </Button>
+        </div>
+
         <div className="text-center p-3 bg-muted/30 rounded-lg">
             <p className="text-lg font-bold font-headline">{message}</p>
         </div>
