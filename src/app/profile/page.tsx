@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { games, userProfile } from '@/lib/data';
 import { Crown } from 'lucide-react';
+import { DynamicGameIcon } from '@/components/DynamicGameIcon';
 
 export default function ProfilePage() {
   return (
@@ -18,8 +19,8 @@ export default function ProfilePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Crown className="mr-2 h-6 w-6 text-yellow-500" />
+          <CardTitle className="flex items-center gap-2">
+            <Crown className="h-6 w-6 text-yellow-500" />
             My High Scores
           </CardTitle>
         </CardHeader>
@@ -27,19 +28,27 @@ export default function ProfilePage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Game</TableHead>
+                <TableHead className="w-[50px]">Game</TableHead>
+                <TableHead>Title</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">High Score</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {games.sort((a,b) => b.highscore - a.highscore).map((game) => (
-                <TableRow key={game.id}>
-                  <TableCell className="font-medium">{game.title}</TableCell>
-                  <TableCell className="text-muted-foreground">{game.category}</TableCell>
-                  <TableCell className="text-right font-mono">{game.highscore.toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
+              {games.sort((a,b) => b.highscore - a.highscore).map((game) => {
+                return (
+                    <TableRow key={game.id}>
+                    <TableCell>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                            <DynamicGameIcon iconName={game.icon} className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                    </TableCell>
+                    <TableCell className="font-medium">{game.title}</TableCell>
+                    <TableCell className="text-muted-foreground">{game.category}</TableCell>
+                    <TableCell className="text-right font-mono text-lg">{game.highscore.toLocaleString()}</TableCell>
+                    </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>

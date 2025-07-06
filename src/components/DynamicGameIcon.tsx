@@ -1,0 +1,26 @@
+import type { FC } from 'react';
+import type { LucideProps } from 'lucide-react';
+import { Blocks, Ship, Crown, Calculator, Grid3x3 } from 'lucide-react';
+import { TicTacToeIcon, SnakeIcon } from '@/components/GameIcons';
+
+const iconMap: Record<string, FC<LucideProps>> = {
+  TicTacToeIcon,
+  SnakeIcon,
+  Sudoku: Grid3x3,
+  '2048': Calculator,
+  Chess: Crown,
+  Battleship: Ship,
+  BlockStacker: Blocks,
+};
+
+interface DynamicGameIconProps extends LucideProps {
+  iconName: string;
+}
+
+export function DynamicGameIcon({ iconName, ...props }: DynamicGameIconProps) {
+  const Icon = iconMap[iconName];
+  if (!Icon) {
+    return null;
+  }
+  return <Icon {...props} />;
+}

@@ -8,6 +8,7 @@ import { Sudoku } from '@/components/games/Sudoku';
 import { Game2048 } from '@/components/games/Game2048';
 import { Chess } from '@/components/games/Chess';
 import { Battleship } from '@/components/games/Battleship';
+import { DynamicGameIcon } from '@/components/DynamicGameIcon';
 
 export default function GamePage({ params }: { params: { id: string } }) {
   const game = games.find((g) => g.id === parseInt(params.id, 10));
@@ -15,7 +16,7 @@ export default function GamePage({ params }: { params: { id: string } }) {
   if (!game) {
     notFound();
   }
-
+  
   const renderGame = () => {
     switch (game.id) {
       case 1:
@@ -49,10 +50,13 @@ export default function GamePage({ params }: { params: { id: string } }) {
   return (
     <div className="container mx-auto flex flex-col items-center">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">
-          {game.title}
-        </h1>
-        <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+        <div className="flex items-center justify-center gap-4">
+            <DynamicGameIcon iconName={game.icon} className="h-10 w-10 text-primary" />
+            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl font-headline">
+              {game.title}
+            </h1>
+        </div>
+        <p className="mx-auto mt-2 max-w-[700px] text-muted-foreground md:text-xl">
           {game.description}
         </p>
       </div>

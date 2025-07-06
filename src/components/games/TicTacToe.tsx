@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { X, Circle, RefreshCw } from 'lucide-react';
 
 type Player = 'X' | 'O' | null;
 
@@ -55,25 +56,30 @@ const TicTacToe = () => {
   };
 
   const renderSquare = (index: number) => {
+    const value = board[index];
     return (
       <button
         className={cn(
-          "w-24 h-24 flex items-center justify-center text-4xl font-bold border-2 rounded-lg transition-colors",
-          "border-primary",
-          "hover:bg-accent",
-          board[index] === 'X' ? "text-primary" : "text-destructive"
+          "w-24 h-24 flex items-center justify-center text-4xl font-bold border rounded-lg transition-all duration-200",
+          "border-primary/20 bg-background",
+          "hover:bg-accent focus:bg-accent",
+          "disabled:cursor-not-allowed",
+          value === 'X' ? "text-primary" : "text-destructive",
+          winner && "bg-muted/50"
         )}
         onClick={() => handleClick(index)}
         disabled={!!board[index] || !!winner}
+        aria-label={`Square ${index + 1}`}
       >
-        {board[index]}
+        {value === 'X' && <X className="h-12 w-12" />}
+        {value === 'O' && <Circle className="h-12 w-12" />}
       </button>
     );
   };
 
   let status;
   if (winner) {
-    status = `Winner: ${winner}`;
+    status = `Winner: Player ${winner}!`;
   } else if (isDraw) {
     status = 'It\'s a Draw!';
   } else {
@@ -81,15 +87,18 @@ const TicTacToe = () => {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md bg-card/70 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-center">{status}</CardTitle>
+        <CardTitle className="text-center text-2xl">{status}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center space-y-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 bg-primary/10 p-2 rounded-lg">
           {Array(9).fill(null).map((_, i) => renderSquare(i))}
         </div>
-        <Button onClick={resetGame}>Reset Game</Button>
+        <Button onClick={resetGame}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          {winner || isDraw ? 'Play Again' : 'Reset Game'}
+        </Button>
       </CardContent>
     </Card>
   );

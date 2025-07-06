@@ -1,12 +1,12 @@
 'use client';
 
-import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Game } from '@/lib/data';
-import { Users, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { Badge } from './ui/badge';
 import Link from 'next/link';
+import { DynamicGameIcon } from './DynamicGameIcon';
 
 interface GameCardProps {
   game: Game;
@@ -14,33 +14,24 @@ interface GameCardProps {
 
 export function GameCard({ game }: GameCardProps) {
   return (
-    <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-105">
-      <CardHeader className="p-0">
-        <div className="relative h-48 w-full">
-          <Image
-            src={game.image}
-            alt={game.title}
-            fill
-            className="object-cover"
-            data-ai-hint={game.aiHint}
-          />
+    <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+      <CardHeader className="flex-grow p-6 flex flex-col items-center justify-center text-center bg-muted/30 dark:bg-muted/10">
+        <div className="p-4 bg-primary/10 rounded-full mb-4">
+            <DynamicGameIcon iconName={game.icon} className="h-12 w-12 text-primary" />
         </div>
-      </CardHeader>
-      <CardContent className="flex-grow p-4">
-        <Badge variant="secondary" className="mb-2">{game.category}</Badge>
         <CardTitle className="text-xl font-bold font-headline">{game.title}</CardTitle>
-        <CardDescription className="mt-2 text-sm">{game.description}</CardDescription>
+        <Badge variant="secondary" className="mt-2">{game.category}</Badge>
+      </CardHeader>
+      <CardContent className="p-6 pt-4 flex-grow">
+        <CardDescription className="text-sm text-center">{game.description}</CardDescription>
       </CardContent>
-      <CardFooter className="flex justify-between p-4 bg-muted/50">
-        <Link href={`/play/${game.id}`}>
-          <Button>
+      <CardFooter className="flex justify-center p-4 pt-0">
+        <Link href={`/play/${game.id}`} className="w-full">
+          <Button className="w-full">
             <Play className="mr-2 h-4 w-4" />
-            Play
+            Play Now
           </Button>
         </Link>
-        <Button variant="outline" size="icon" aria-label="Local Multiplayer">
-          <Users className="h-5 w-5" />
-        </Button>
       </CardFooter>
     </Card>
   );
