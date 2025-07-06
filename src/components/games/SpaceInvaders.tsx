@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Trophy, Pause, Play, RefreshCw } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Joystick } from '@/components/Joystick';
+import { AlienIcon } from '@/components/GameIcons';
+import { cn } from '@/lib/utils';
 
 const GAME_WIDTH = 600;
 const GAME_HEIGHT = 400;
@@ -16,6 +18,12 @@ const INVADER_COLS = 8;
 const INVADER_SIZE = 30;
 
 type Bullet = { x: number; y: number; };
+
+const PlayerShip = () => (
+    <svg width={PLAYER_WIDTH} height={PLAYER_HEIGHT} viewBox="0 0 40 20">
+        <polygon points="20,0 40,20 0,20" className="fill-cyan-400" style={{filter: 'drop-shadow(0 0 5px hsl(var(--primary)))'}} />
+    </svg>
+);
 
 export const SpaceInvaders = () => {
   const [playerX, setPlayerX] = useState(GAME_WIDTH / 2 - PLAYER_WIDTH / 2);
@@ -182,26 +190,31 @@ export const SpaceInvaders = () => {
         <div className='flex items-center gap-2'><Trophy className='h-5 w-5 text-yellow-500' /> Best: {highScore}</div>
         <div>Lives: {lives}</div>
       </div>
-      <div className="relative bg-black border-2 border-primary/50 overflow-hidden" style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}>
-        {gameOver && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 text-white">
-                <h2 className="text-4xl font-bold font-headline">Game Over</h2>
-                <Button onClick={resetGame} className="mt-4" variant="outline">Play Again</Button>
+      <div className="relative bg-black border-2 border-primary/50 overflow-hidden" style={{ width: GAME_WIDTH, height: GAME_HEIGHT, boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 15px hsl(var(--primary)/0.3)' }}>
+        {(gameOver || isPaused) && (
+            <div className={cn("absolute inset-0 flex flex-col items-center justify-center z-10 text-white", gameOver ? 'bg-black/80' : 'bg-black/50')}>
+                <h2 className="text-4xl font-bold font-headline">{gameOver ? 'Game Over' : 'Paused'}</h2>
+                <Button onClick={gameOver ? resetGame : togglePause} className="mt-4" variant="outline">
+                    {gameOver ? 'Play Again' : 'Resume'}
+                </Button>
             </div>
         )}
-        {isPaused && !gameOver && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 text-white">
-                <h2 className="text-4xl font-bold font-headline">Paused</h2>
-                <Button onClick={togglePause} className="mt-4" variant="outline">Resume</Button>
-            </div>
-        )}
+        
         {/* Player */}
-        <div className="absolute bg-cyan-400" style={{ left: playerX, bottom: 0, width: PLAYER_WIDTH, height: PLAYER_HEIGHT }} />
+        <div className="absolute" style={{ left: playerX, bottom: 5, width: PLAYER_WIDTH, height: PLAYER_HEIGHT }}>
+            <PlayerShip />
+        </div>
+
         {/* Invaders */}
-        {invaders.map((inv, i) => inv.alive && <div key={i} className="absolute bg-fuchsia-500" style={{ left: inv.x, top: inv.y, width: INVADER_SIZE, height: INVADER_SIZE }}/>)}
+        {invaders.map((inv, i) => inv.alive && (
+            <div key={i} className="absolute transition-transform duration-500 ease-linear" style={{ left: inv.x, top: inv.y, width: INVADER_SIZE, height: INVADER_SIZE }}>
+                 <AlienIcon className="text-fuchsia-500 w-full h-full" style={{filter: 'drop-shadow(0 0 5px hsl(var(--accent)))'}}/>
+            </div>
+        ))}
+        
         {/* Bullets */}
-        {playerBullets.map((b, i) => <div key={i} className="absolute bg-cyan-400" style={{ left: b.x, top: b.y, width: 4, height: 10 }} />)}
-        {invaderBullets.map((b, i) => <div key={i} className="absolute bg-red-500" style={{ left: b.x, top: b.y, width: 4, height: 10 }} />)}
+        {playerBullets.map((b, i) => <div key={`p-${i}`} className="absolute bg-cyan-400" style={{ left: b.x, top: b.y, width: 4, height: 10, boxShadow: '0 0 8px hsl(var(--primary))' }} />)}
+        {invaderBullets.map((b, i) => <div key={`i-${i}`} className="absolute bg-red-500" style={{ left: b.x, top: b.y, width: 4, height: 10, boxShadow: '0 0 8px hsl(var(--destructive))' }} />)}
       </div>
        <div className="w-full flex flex-col items-center gap-2">
          {!gameOver && (
@@ -218,7 +231,7 @@ export const SpaceInvaders = () => {
         )}
         <p className="text-sm text-muted-foreground">Use Arrow Keys to move, Space to shoot, and P to pause.</p>
       </div>
-      {isMobile && <Joystick onMove={handleJoystickMove} />}
+      {isMobile && !gameOver && <Joystick onMove={handleJoystickMove} />}
     </div>
   );
 };
