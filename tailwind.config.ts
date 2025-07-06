@@ -12,7 +12,7 @@ export default {
       fontFamily: {
         body: ['Inter', 'sans-serif'],
         headline: ['Rajdhani', 'sans-serif'],
-        code: ['monospace'],
+        code: ['VT323', 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -88,10 +88,25 @@ export default {
             height: '0',
           },
         },
+        'ticker': {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        'text-flicker': {
+          '0%, 100%': { opacity: '1', 'text-shadow': '0 0 10px hsl(var(--primary)), 0 0 20px hsl(var(--primary))' },
+          '40%': { opacity: '0.8', 'text-shadow': '0 0 8px hsl(var(--primary)), 0 0 16px hsl(var(--primary))' },
+          '42%': { opacity: '0.3', 'text-shadow': 'none' },
+          '43%': { opacity: '1', 'text-shadow': '0 0 10px hsl(var(--primary)), 0 0 20px hsl(var(--primary))' },
+          '60%': { opacity: '1', 'text-shadow': '0 0 10px hsl(var(--primary)), 0 0 20px hsl(var(--primary))' },
+          '62%': { opacity: '0.5', 'text-shadow': 'none' },
+          '63%': { opacity: '1', 'text-shadow': '0 0 10px hsl(var(--primary)), 0 0 20px hsl(var(--primary))' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'ticker': 'ticker 60s linear infinite',
+        'text-flicker': 'text-flicker 3s linear infinite alternate',
       },
     },
   },
