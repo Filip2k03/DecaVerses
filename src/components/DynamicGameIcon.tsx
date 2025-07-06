@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import type { LucideProps } from 'lucide-react';
 import { Blocks, Ship, Crown, Calculator, Grid3x3, Bomb } from 'lucide-react';
-import { TicTacToeIcon, SnakeIcon, ClawMachineIcon } from '@/components/GameIcons';
+import { TicTacToeIcon, SnakeIcon, ClawMachineIcon, BearIcon } from '@/components/GameIcons';
 
 const iconMap: Record<string, FC<LucideProps>> = {
   TicTacToeIcon,
@@ -13,6 +13,7 @@ const iconMap: Record<string, FC<LucideProps>> = {
   Minesweeper: Bomb,
   BlockStacker: Blocks,
   ClawMachineIcon,
+  BearIcon,
 };
 
 interface DynamicGameIconProps extends LucideProps {

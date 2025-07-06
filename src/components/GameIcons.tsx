@@ -42,3 +42,14 @@ export const AlienIcon: FC<LucideProps> = (props) => (
     </svg>
 );
 AlienIcon.displayName = 'AlienIcon';
+
+export const BearIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 10V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v4"/>
+    <path d="M12 18.5c-3.3 0-6-2.5-6-5.5V10h12v3c0 3-2.7 5.5-6 5.5Z"/>
+    <path d="M6 9h.01"/>
+    <path d="M18 9h.01"/>
+    <path d="M12 14v.01"/>
+  </svg>
+);
+BearIcon.displayName = 'BearIcon';

@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useGame } from '@/context/GameContext';
-import { Trophy, Award, CarFront, Bear, Rocket } from 'lucide-react';
-import { AlienIcon } from '@/components/GameIcons';
+import { Trophy, Award, CarFront, Rocket } from 'lucide-react';
+import { AlienIcon, BearIcon, ClawMachineIcon } from '@/components/GameIcons';
 
 const GAME_WIDTH = 400;
 const GAME_HEIGHT = 400;
@@ -16,7 +16,7 @@ const PRIZE_COUNT = 15;
 
 const prizeTypes = {
   car: { icon: CarFront, points: 10, size: 30 },
-  bear: { icon: Bear, points: 20, size: 35 },
+  bear: { icon: BearIcon, points: 20, size: 35 },
   ufo: { icon: Rocket, points: 30, size: 25 },
   alien: { icon: AlienIcon, points: 50, size: 30 },
 };
