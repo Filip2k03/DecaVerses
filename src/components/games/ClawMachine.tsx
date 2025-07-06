@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useGame } from '@/context/GameContext';
-import { Trophy, Award, CarFront, Rocket, PackageCheck, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Trophy, Award, CarFront, Rocket, PackageCheck } from 'lucide-react';
 import { AlienIcon, BearIcon, ClawMachineIcon } from '@/components/GameIcons';
 
 const GAME_WIDTH = 400;
 const GAME_HEIGHT = 400;
-const CLAW_SPEED_X = 3;
+const CLAW_SPEED_X = 2;
 const CLAW_SPEED_Y = 4;
 const INITIAL_ATTEMPTS = 10;
 const PRIZE_COUNT = 15;
@@ -31,12 +31,13 @@ type Prize = {
   rotation: number;
 };
 
-type ClawState = 'ready' | 'dropping' | 'grabbing' | 'rising' | 'returning' | 'releasing' | 'resetting';
+type ClawState = 'ready' | 'dropping' | 'grabbing' | 'rising' | 'returning' | 'releasing';
 
 export function ClawMachine() {
   const [gameState, setGameState] = useState<'playing' | 'gameover'>('playing');
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [clawPos, setClawPos] = useState({ x: GAME_WIDTH / 2 - 20, y: 20 });
+  const [clawDirection, setClawDirection] = useState<'left' | 'right'>('right');
   const [clawState, setClawState] = useState<ClawState>('ready');
   const [clawOpen, setClawOpen] = useState(true);
   const [capturedPrize, setCapturedPrize] = useState<Prize | null>(null);
@@ -46,30 +47,50 @@ export function ClawMachine() {
 
   const { scores, updateScore } = useGame();
   const highScore = scores[9] || 0;
-  const moveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetGame = useCallback(() => {
     const newPrizes: Prize[] = [];
     for (let i = 0; i < PRIZE_COUNT; i++) {
-      const type = (Object.keys(prizeTypes) as PrizeType[])[Math.floor(Math.random() * 4)];
-      const size = prizeTypes[type].size;
-      newPrizes.push({
-        id: i,
-        type,
-        x: Math.random() * (GAME_WIDTH - size * 2) + size,
-        y: GAME_HEIGHT - size - Math.random() * (GAME_HEIGHT / 2.5),
-        captured: false,
-        rotation: Math.random() * 40 - 20,
-      });
+        let placed = false;
+        let attempts = 0;
+        while (!placed && attempts < 20) {
+            const type = (Object.keys(prizeTypes) as PrizeType[])[Math.floor(Math.random() * 4)];
+            const size = prizeTypes[type].size;
+            const newPrizeCandidate = {
+                id: i,
+                type,
+                x: Math.random() * (GAME_WIDTH - size * 2) + size,
+                y: GAME_HEIGHT - size - Math.random() * (GAME_HEIGHT / 2.5),
+                captured: false,
+                rotation: Math.random() * 40 - 20,
+            };
+
+            const isOverlapping = newPrizes.some(p => {
+                const pSize = prizeTypes[p.type].size;
+                const dist = Math.sqrt(
+                    Math.pow(p.x + pSize/2 - (newPrizeCandidate.x + size/2), 2) +
+                    Math.pow(p.y + pSize/2 - (newPrizeCandidate.y + size/2), 2)
+                );
+                return dist < (pSize/2 + size/2);
+            });
+
+            if (!isOverlapping) {
+                newPrizes.push(newPrizeCandidate);
+                placed = true;
+            }
+            attempts++;
+        }
     }
+
     setPrizes(newPrizes);
     setScore(0);
     setAttemptsLeft(INITIAL_ATTEMPTS);
     setGameState('playing');
     setClawState('ready');
-    setClawPos({ x: GAME_WIDTH / 2 - 20, y: 20 });
+    setClawPos({ x: 0, y: 20 });
+    setClawDirection('right');
     setCapturedPrize(null);
-    setMessage('Position the claw and drop it!');
+    setMessage('Time it right and drop the claw!');
   }, []);
 
   useEffect(() => {
@@ -83,31 +104,32 @@ export function ClawMachine() {
     }
   };
 
-  const handleMoveStart = (direction: 'left' | 'right') => {
-    if (clawState !== 'ready' || moveIntervalRef.current) return;
-
-    moveIntervalRef.current = setInterval(() => {
-      setClawPos(prev => {
-        const newX = prev.x + (direction === 'left' ? -CLAW_SPEED_X : CLAW_SPEED_X);
-        if (newX >= 0 && newX <= GAME_WIDTH - 40) {
-          return { ...prev, x: newX };
-        }
-        return prev;
-      });
-    }, 20);
-  };
-
-  const handleMoveEnd = () => {
-    if (moveIntervalRef.current) {
-      clearInterval(moveIntervalRef.current);
-      moveIntervalRef.current = null;
-    }
-  };
-
   useEffect(() => {
     if (gameState !== 'playing') return;
 
     let interval: NodeJS.Timeout;
+
+    if (clawState === 'ready') {
+        interval = setInterval(() => {
+            setClawPos(prev => {
+                let newX = prev.x;
+                if (clawDirection === 'right') {
+                    newX += CLAW_SPEED_X;
+                    if (newX >= GAME_WIDTH - 40) {
+                        setClawDirection('left');
+                        newX = GAME_WIDTH - 40;
+                    }
+                } else {
+                    newX -= CLAW_SPEED_X;
+                    if (newX <= 0) {
+                        setClawDirection('right');
+                        newX = 0;
+                    }
+                }
+                return { ...prev, x: newX };
+            });
+        }, 20);
+    }
     
     if (clawState === 'dropping' || clawState === 'rising') {
        interval = setInterval(() => {
@@ -188,7 +210,7 @@ export function ClawMachine() {
 
             setTimeout(() => {
                 if (attemptsLeft > 0) {
-                    setClawState('resetting');
+                    setClawState('ready');
                 } else {
                     setGameState('gameover');
                     const finalScore = score + (capturedPrize ? prizeTypes[capturedPrize.type].points : 0);
@@ -199,28 +221,10 @@ export function ClawMachine() {
         }, 500);
     }
 
-     if (clawState === 'resetting') {
-        interval = setInterval(() => {
-            setClawPos(prev => {
-                const targetX = GAME_WIDTH / 2 - 20;
-                if (Math.abs(prev.x - targetX) < CLAW_SPEED_X) {
-                    setClawState('ready');
-                    return { ...prev, x: targetX };
-                }
-                const newX = prev.x + (prev.x > targetX ? -CLAW_SPEED_X : CLAW_SPEED_X);
-                return { ...prev, x: newX };
-            });
-        }, 20);
-    }
-
-
     return () => {
         clearInterval(interval);
-        if (moveIntervalRef.current) {
-            clearInterval(moveIntervalRef.current);
-        }
     };
-  }, [clawState, clawPos.x, clawPos.y, prizes, capturedPrize, gameState, attemptsLeft, score, updateScore]);
+  }, [clawState, clawPos.x, clawPos.y, prizes, capturedPrize, gameState, attemptsLeft, score, updateScore, clawDirection]);
 
 
   const PrizeComponent = useMemo(() => {
@@ -304,35 +308,6 @@ export function ClawMachine() {
         <Button onClick={handleDrop} disabled={clawState !== 'ready' || gameState === 'gameover'} className="w-full text-lg font-bold" size="lg">
           DROP CLAW
         </Button>
-        
-        <div className="grid grid-cols-2 gap-2">
-            <Button
-                variant="outline"
-                className="h-14"
-                disabled={clawState !== 'ready'}
-                onMouseDown={() => handleMoveStart('left')}
-                onMouseUp={handleMoveEnd}
-                onMouseLeave={handleMoveEnd}
-                onTouchStart={(e) => { e.preventDefault(); handleMoveStart('left'); }}
-                onTouchEnd={handleMoveEnd}
-            >
-                <ArrowLeft className="h-6 w-6" />
-                <span className="sr-only">Move Left</span>
-            </Button>
-            <Button
-                variant="outline"
-                className="h-14"
-                disabled={clawState !== 'ready'}
-                onMouseDown={() => handleMoveStart('right')}
-                onMouseUp={handleMoveEnd}
-                onMouseLeave={handleMoveEnd}
-                onTouchStart={(e) => { e.preventDefault(); handleMoveStart('right'); }}
-                onTouchEnd={handleMoveEnd}
-            >
-                <ArrowRight className="h-6 w-6" />
-                <span className="sr-only">Move Right</span>
-            </Button>
-        </div>
 
         <div className="text-center p-3 bg-muted/30 rounded-lg">
             <p className="text-lg font-bold font-headline">{message}</p>
