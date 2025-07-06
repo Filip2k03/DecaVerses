@@ -21,3 +21,24 @@ export const SnakeIcon: FC<LucideProps> = (props) => (
   </svg>
 );
 SnakeIcon.displayName = 'SnakeIcon';
+
+export const ClawMachineIcon: FC<LucideProps> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5v12"/>
+        <path d="M16 17c0-2.21-1.79-4-4-4s-4 1.79-4 4"/>
+        <path d="M4 17c0-2.21 1.79-4 4-4"/>
+        <path d="M20 17c0-2.21-1.79-4-4-4"/>
+        <path d="m12 5-2-2a2.5 2.5 0 0 1 4 0l-2 2Z"/>
+    </svg>
+);
+ClawMachineIcon.displayName = 'ClawMachineIcon';
+
+export const AlienIcon: FC<LucideProps> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 12c0-3 2-5 2-5s2 2 2 5c0 3-2 5-2 5s-2-2-2-5Z" />
+        <path d="M12 12c0-3-2-5-2-5s-2 2-2 5c0 3 2 5 2 5s2-2 2-5Z" />
+        <path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+        <path d="M12 3a9 9 0 0 0-9 9c0 4.97 4.03 9 9 9s9-4.03 9-9c0-4.97-4.03-9-9-9Z" />
+    </svg>
+);
+AlienIcon.displayName = 'AlienIcon';

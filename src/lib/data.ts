@@ -15,4 +15,5 @@ export const games: Game[] = [
   { id: 6, title: 'Battleship', description: 'Place your ships and sink the opponent\'s fleet.', category: 'Strategy', icon: 'Battleship' },
   { id: 7, title: 'Minesweeper', description: 'Avoid the bombs! A classic logic puzzle.', category: 'Puzzle', icon: 'Minesweeper'},
   { id: 8, title: 'Block Stacker', description: 'Stack falling blocks to clear lines.', category: 'Puzzle', icon: 'BlockStacker' },
+  { id: 9, title: 'Claw Machine', description: 'Test your skill and luck to grab prizes!', category: 'Arcade', icon: 'ClawMachineIcon' },
 ];

@@ -10,6 +10,7 @@ import { Chess } from '@/components/games/Chess';
 import { Battleship } from '@/components/games/Battleship';
 import { DynamicGameIcon } from '@/components/DynamicGameIcon';
 import { Minesweeper } from '@/components/games/Minesweeper';
+import { ClawMachine } from '@/components/games/ClawMachine';
 
 export default function GamePage({ params }: { params: { id: string } }) {
   const game = games.find((g) => g.id === parseInt(params.id, 10));
@@ -36,6 +37,8 @@ export default function GamePage({ params }: { params: { id: string } }) {
         return <Minesweeper />;
       case 8: // Block Stacker
         return <BlockStacker />;
+      case 9:
+        return <ClawMachine />;
       default:
         return (
           <Card className="w-full max-w-md">
