@@ -1,0 +1,27 @@
+### Project Structure
+
+Your application is a modern Next.js project, organized to be scalable, maintainable, and efficient. Here's a breakdown of the key directories and their purpose:
+
+*   `src/`
+    *   `app/` - This is the heart of your application, using the Next.js App Router.
+        *   `layout.tsx`: The main layout that wraps all pages. It includes the `<html>` and `<body>` tags, global styles, and shared UI like the header.
+        *   `page.tsx`: The home page of your application, where the game cards are displayed.
+        *   `globals.css`: Your global stylesheet and where all the Tailwind CSS and theme variables (colors, fonts) are defined.
+        *   `play/[id]/page.tsx`: A dynamic route that renders the specific game page based on the game's ID.
+        *   `recommendations/`, `scores/`, `settings/`: These folders represent the different pages (routes) of your application. Each contains a `page.tsx` file that is the entry point for that route.
+    *   `components/` - This is where all your reusable React components live.
+        *   `ui/`: Contains the pre-built UI components from shadcn/ui (like `Button`, `Card`, `Input`), which form the building blocks of your app's interface.
+        *   `games/`: **This is where each individual game component is located** (e.g., `Snake.tsx`, `Battleship.tsx`, `ClawMachine.tsx`). Each file contains the complete logic and UI for one game.
+        *   `Header.tsx`, `GameCard.tsx`, `Joystick.tsx`: These are custom, high-level components specific to your application's functionality.
+    *   `ai/` - This directory holds all the Generative AI logic, powered by Genkit.
+        *   `genkit.ts`: Configures and initializes the Genkit instance.
+        *   `flows/`: Contains the Genkit "flows," which are like AI-powered functions. For example, `game-recommendations.ts` defines the logic for your recommendation engine.
+    *   `context/` - Holds your React Context providers. These are used to manage global state that needs to be shared across many components, like `GameContext.tsx` for high scores and `SettingsContext.tsx` for background music.
+    *   `lib/` - A place for utility functions and shared logic.
+        *   `actions.ts`: Contains Next.js Server Actions, which handle form submissions and server-side logic without needing to build a separate API endpoint (e.g., `getGameRecommendations`).
+        *   `data.ts`: Defines the static data for your app, like the list of available games.
+        *   `utils.ts`: A helper file for common utility functions, like `cn` for combining CSS classes.
+    *   `hooks/` - Stores your custom React hooks, like `use-mobile.tsx` to detect if the user is on a mobile device.
+*   `public/` - This folder is for static assets that are served directly, like your background music file (`background-music.mp3`).
+*   `package.json`: Lists all your project's dependencies (like React, Next.js, Genkit) and defines the scripts to run, build, and develop your app.
+*   `tailwind.config.ts`, `next.config.ts`: Configuration files for Tailwind CSS and Next.js, respectively.
