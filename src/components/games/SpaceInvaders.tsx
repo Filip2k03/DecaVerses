@@ -66,6 +66,7 @@ export const SpaceInvaders = () => {
     setLives(3);
     setGameOver(false);
     setIsPaused(false);
+    setInvaderDirection('right');
   }, [createInvaders]);
 
   const togglePause = useCallback(() => {
@@ -114,25 +115,30 @@ export const SpaceInvaders = () => {
     setInvaderBullets(b => b.map(bullet => ({ ...bullet, y: bullet.y + 5 })).filter(b => b.y < GAME_HEIGHT));
 
     // Invader movement
-    let wallHit = false;
-    setInvaders(invs => invs.map(inv => {
-      let newX = inv.x + (invaderDirection === 'right' ? 1 : -1);
-      if (newX <= 0 || newX >= GAME_WIDTH - INVADER_SIZE) {
-        wallHit = true;
-      }
-      return { ...inv, x: newX };
-    }));
+    let wallWasHit = false;
+    const aliveInvaders = invaders.filter(i => i.alive);
+    if (aliveInvaders.length > 0) {
+        const leftMostX = Math.min(...aliveInvaders.map(i => i.x));
+        const rightMostX = Math.max(...aliveInvaders.map(i => i.x));
+        if ((invaderDirection === 'right' && rightMostX + INVADER_SIZE >= GAME_WIDTH) ||
+            (invaderDirection === 'left' && leftMostX <= 0)) {
+            wallWasHit = true;
+        }
+    }
 
-    if (wallHit) {
-      setInvaderDirection(d => d === 'right' ? 'left' : 'right');
-      setInvaders(invs => invs.map(inv => ({...inv, y: inv.y + 10})));
+    if (wallWasHit) {
+        const newDirection = invaderDirection === 'right' ? 'left' : 'right';
+        setInvaderDirection(newDirection);
+        setInvaders(invs => invs.map(inv => ({ ...inv, y: inv.y + 10 })));
+    } else {
+        setInvaders(invs => invs.map(inv => ({ ...inv, x: inv.x + (invaderDirection === 'right' ? 1 : -1) })));
     }
     
     // Invader shooting
     if (Math.random() < 0.02) {
-        const aliveInvaders = invaders.filter(i => i.alive);
-        if (aliveInvaders.length > 0) {
-            const randomInvader = aliveInvaders[Math.floor(Math.random() * aliveInvaders.length)];
+        const currentAliveInvaders = invaders.filter(i => i.alive);
+        if (currentAliveInvaders.length > 0) {
+            const randomInvader = currentAliveInvaders[Math.floor(Math.random() * currentAliveInvaders.length)];
             setInvaderBullets(b => [...b, {x: randomInvader.x + INVADER_SIZE/2, y: randomInvader.y + INVADER_SIZE}]);
         }
     }
