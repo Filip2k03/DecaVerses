@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from '@/components/ui/toaster';
+import { SettingsProvider } from '@/context/SettingsContext';
+import { BackgroundMusic } from '@/components/BackgroundMusic';
 
 export const metadata: Metadata = {
   title: 'DecaVerse',
@@ -21,13 +23,16 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <div className="flex min-h-screen w-full flex-col">
-          <Header />
-          <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-            {children}
-          </main>
-        </div>
-        <Toaster />
+        <SettingsProvider>
+          <div className="flex min-h-screen w-full flex-col">
+            <Header />
+            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 mb-16 md:mb-0">
+              {children}
+            </main>
+          </div>
+          <Toaster />
+          <BackgroundMusic />
+        </SettingsProvider>
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, User, Sparkles } from 'lucide-react';
+import { Gamepad2, User, Sparkles, Settings } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './ThemeToggle';
@@ -14,6 +14,7 @@ export function Header() {
     { href: '/', label: 'Games', icon: Gamepad2 },
     { href: '/profile', label: 'Profile', icon: User },
     { href: '/recommendations', label: 'For You', icon: Sparkles },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -41,7 +42,7 @@ export function Header() {
             <ThemeToggle />
         </div>
       </div>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-background/95 p-2">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-background/95 p-2 z-50">
         <nav className="flex justify-around">
            {navItems.map((item) => (
             <Link key={`mobile-${item.href}`} href={item.href} legacyBehavior>
