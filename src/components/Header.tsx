@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Gamepad2, Trophy, Sparkles, Settings } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ThemeToggle } from './ThemeToggle';
 import { Button } from './ui/button';
 
 export function Header() {
@@ -18,11 +17,11 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Gamepad2 className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg font-headline">DecaVerse</span>
+          <Gamepad2 className="h-6 w-6 text-primary" style={{ filter: 'drop-shadow(0 0 6px hsl(var(--primary)))' }}/>
+          <span className="font-bold text-lg font-headline" style={{ textShadow: '0 0 6px hsl(var(--primary))' }}>DecaVerse</span>
         </Link>
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
           {navItems.map((item) => (
@@ -30,8 +29,8 @@ export function Header() {
               key={item.href}
               href={item.href}
               className={cn(
-                'transition-colors hover:text-foreground/80',
-                pathname === item.href ? 'text-foreground' : 'text-foreground/60'
+                'transition-colors hover:text-primary',
+                pathname === item.href ? 'text-primary' : 'text-foreground/60'
               )}
             >
               {item.label}
@@ -39,7 +38,7 @@ export function Header() {
           ))}
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
-            <ThemeToggle />
+            {/* ThemeToggle removed */}
         </div>
       </div>
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-background/95 p-2 z-50">

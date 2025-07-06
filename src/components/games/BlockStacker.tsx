@@ -27,7 +27,7 @@ const TETROMINO_MAP: Record<string, number> = {
 };
 
 const colors: { [key: number]: string } = {
-  0: 'hsl(var(--muted))',
+  0: 'hsl(var(--background) / 0.5)',
   1: 'hsl(var(--chart-1))',
   2: 'hsl(var(--chart-2))',
   3: 'hsl(var(--chart-3))',
@@ -226,7 +226,7 @@ export function BlockStacker() {
 
   return (
     <div className="flex flex-col md:flex-row items-start gap-4">
-      <div className="border-4 border-primary rounded-lg p-2 bg-background">
+      <div className="border-4 border-primary rounded-lg p-1 bg-background shadow-[0_0_20px_hsl(var(--primary)/0.8)]">
         <div
           className="grid gap-px"
           style={{
@@ -240,8 +240,11 @@ export function BlockStacker() {
             row.map((cell, x) => (
               <div
                 key={`${y}-${x}`}
-                className="w-full h-full rounded-[2px]"
-                style={{ backgroundColor: colors[cell] || 'hsl(var(--muted))' }}
+                className="w-full h-full"
+                style={{ 
+                    backgroundColor: colors[cell] || 'hsl(var(--muted))',
+                    boxShadow: cell !== 0 ? `inset 0 0 4px hsl(var(--background)), 0 0 8px ${colors[cell]}` : 'none'
+                 }}
               />
             ))
           )}
@@ -249,16 +252,16 @@ export function BlockStacker() {
       </div>
       <div className="w-full md:w-64 space-y-4">
         {gameOver && (
-          <div className="flex flex-col items-center p-4 bg-destructive text-destructive-foreground rounded-lg">
+          <div className="flex flex-col items-center p-4 bg-destructive/80 text-destructive-foreground rounded-lg">
             <h2 className="text-2xl font-bold">Game Over</h2>
             <p>Your score: {score}</p>
           </div>
         )}
-        <div className="p-4 bg-muted rounded-lg text-center">
+        <div className="p-4 bg-muted/80 rounded-lg text-center">
           <h3 className="text-lg font-bold">Score</h3>
           <p className="text-2xl font-mono">{score}</p>
         </div>
-         <div className="p-4 bg-muted rounded-lg text-center">
+         <div className="p-4 bg-muted/80 rounded-lg text-center">
           <h3 className="text-lg font-bold flex items-center justify-center gap-2">
             <Trophy className="h-5 w-5 text-yellow-500" />
             High Score

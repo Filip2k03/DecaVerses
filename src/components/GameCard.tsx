@@ -20,7 +20,7 @@ export function GameCard({ game }: GameCardProps) {
 
 
   return (
-    <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+    <Card className="flex flex-col overflow-hidden transition-all duration-300 border border-transparent hover:border-primary hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] hover:-translate-y-1">
       <CardHeader className="flex-grow p-6 flex flex-col items-center justify-center text-center bg-muted/30 dark:bg-muted/10">
         <div className="p-4 bg-primary/10 rounded-full mb-4">
             <DynamicGameIcon iconName={game.icon} className="h-12 w-12 text-primary" />
