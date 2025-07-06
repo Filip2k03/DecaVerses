@@ -3,10 +3,10 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Ship, Target, Waves, AlertTriangle, Trophy } from 'lucide-react';
+import { Ship, Target, Waves, AlertTriangle, Trophy, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/context/GameContext';
 
@@ -79,19 +79,22 @@ const Battleship = () => {
   }, [turns, updateScore]);
 
   useEffect(() => {
-    if (opponentHits === totalShipParts) {
+    if (opponentHits === totalShipParts && gameState === 'battle') {
       handleGameEnd('Player');
     }
-    if (playerHits === totalShipParts) {
+    if (playerHits === totalShipParts && gameState === 'battle') {
       handleGameEnd('Opponent');
     }
-  }, [playerHits, opponentHits, totalShipParts, handleGameEnd]);
+  }, [playerHits, opponentHits, totalShipParts, handleGameEnd, gameState]);
 
   const canPlaceShip = (grid: Grid, size: number, col: number, row: number, orient: 'horizontal' | 'vertical') => {
+    if (orient === 'horizontal' && col + size > GRID_SIZE) return false;
+    if (orient === 'vertical' && row + size > GRID_SIZE) return false;
+
     for (let i = 0; i < size; i++) {
         const checkCol = orient === 'horizontal' ? col + i : col;
         const checkRow = orient === 'vertical' ? row + i : row;
-        if (checkCol >= GRID_SIZE || checkRow >= GRID_SIZE || grid[checkRow][checkCol] !== 'empty') {
+        if (grid[checkRow][checkCol] !== 'empty') {
             return false;
         }
     }
@@ -125,25 +128,27 @@ const Battleship = () => {
 
   const opponentTurn = () => {
     setTurnMessage("Opponent is thinking...");
-    let fired = false;
-    let attempts = 0;
-    while (!fired && attempts < 100) {
-      const col = Math.floor(Math.random() * GRID_SIZE);
-      const row = Math.floor(Math.random() * GRID_SIZE);
-      if (playerGrid[row][col] !== 'hit' && playerGrid[row][col] !== 'miss') {
-        const newPlayerGrid = playerGrid.map(r => [...r]);
-        if (newPlayerGrid[row][col] === 'ship') {
-          newPlayerGrid[row][col] = 'hit';
-          setPlayerHits(h => h + 1);
-        } else {
-          newPlayerGrid[row][col] = 'miss';
+    setTimeout(() => {
+        let fired = false;
+        let attempts = 0;
+        while (!fired && attempts < 100) {
+            const col = Math.floor(Math.random() * GRID_SIZE);
+            const row = Math.floor(Math.random() * GRID_SIZE);
+            if (playerGrid[row][col] !== 'hit' && playerGrid[row][col] !== 'miss') {
+                const newPlayerGrid = playerGrid.map(r => [...r]);
+                if (newPlayerGrid[row][col] === 'ship') {
+                newPlayerGrid[row][col] = 'hit';
+                setPlayerHits(h => h + 1);
+                } else {
+                newPlayerGrid[row][col] = 'miss';
+                }
+                setPlayerGrid(newPlayerGrid);
+                fired = true;
+            }
+            attempts++;
         }
-        setPlayerGrid(newPlayerGrid);
-        fired = true;
-      }
-      attempts++;
-    }
-    setTurnMessage("Your turn! Fire at the opponent's grid.");
+        setTurnMessage("Your turn! Fire at the opponent's grid.");
+    }, 600);
   };
 
   const handleBattleClick = (col: number, row: number) => {
@@ -151,16 +156,18 @@ const Battleship = () => {
     
     setTurns(t => t + 1);
     const newOpponentGrid = opponentGrid.map(r => [...r]);
+    let newOpponentHits = opponentHits;
     if (newOpponentGrid[row][col] === 'ship') {
         newOpponentGrid[row][col] = 'hit';
-        setOpponentHits(h => h + 1);
+        newOpponentHits++;
+        setOpponentHits(newOpponentHits);
     } else {
         newOpponentGrid[row][col] = 'miss';
     }
     setOpponentGrid(newOpponentGrid);
     
-    if (winner === null && (opponentHits + 1) < totalShipParts) {
-      setTimeout(opponentTurn, 600);
+    if (winner === null && newOpponentHits < totalShipParts) {
+      opponentTurn();
     }
   };
 
@@ -175,26 +182,32 @@ const Battleship = () => {
     setOpponentHits(0);
     setTurns(0);
     setTurnMessage('');
+    placeOpponentShips();
   };
+  
+  useEffect(() => {
+    placeOpponentShips();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const renderGrid = (grid: Grid, isPlayer: boolean, onClick: (col: number, row: number) => void) => (
-    <div className="grid grid-cols-10 gap-px bg-primary/20 border border-primary rounded-md overflow-hidden">
+    <div className="grid grid-cols-10 gap-px bg-primary/20 border-2 border-primary rounded-lg overflow-hidden shadow-[0_0_20px_hsl(var(--primary)/0.5)]">
       {grid.map((row, y) =>
         row.map((cell, x) => (
           <div
             key={`${x}-${y}`}
             className={cn(
               'aspect-square flex items-center justify-center transition-colors',
-              'bg-background hover:bg-primary/10',
-              { 'cursor-pointer': (gameState === 'placement' && isPlayer) || (gameState === 'battle' && !isPlayer && !winner)},
-              { 'bg-blue-400/50 dark:bg-blue-800/50': isPlayer && cell === 'ship' },
-              { 'bg-red-500/80': cell === 'hit' },
-              { 'bg-gray-400/50 dark:bg-gray-600/50': cell === 'miss' }
+              'bg-background/80 backdrop-blur-sm',
+              { 'cursor-pointer hover:bg-primary/20': (gameState === 'placement' && isPlayer) || (gameState === 'battle' && !isPlayer && !winner)},
+              { 'bg-primary/30': isPlayer && cell === 'ship' },
+              { 'bg-destructive/70 animate-pulse': cell === 'hit' },
+              { 'bg-primary/10': cell === 'miss' }
             )}
             onClick={() => onClick(x, y)}
           >
-            {cell === 'hit' && <Target className="w-5/6 h-5/6 text-white" />}
-            {cell === 'miss' && <Waves className="w-5/6 h-5/6 text-white/50" />}
+            {cell === 'hit' && <Target className="w-5/6 h-5/6 text-destructive-foreground" />}
+            {cell === 'miss' && <Waves className="w-5/6 h-5/6 text-primary/50" />}
           </div>
         ))
       )}
@@ -202,65 +215,80 @@ const Battleship = () => {
   );
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-4xl mx-auto">
+    <div className="flex flex-col items-center gap-6 w-full max-w-5xl mx-auto">
       {gameState === 'gameover' && (
-        <Alert variant={winner === 'Player' ? 'default' : 'destructive'} className="max-w-md">
+        <Alert variant={winner === 'Player' ? 'default' : 'destructive'} className="max-w-md text-center border-2 animate-in fade-in">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Game Over!</AlertTitle>
-            <AlertDescription>{winner} has won the game! {winner === 'Player' && `Your score: ${Math.max(0, 100 - turns)}`}</AlertDescription>
+            <AlertTitle className="text-2xl font-headline">Game Over!</AlertTitle>
+            <AlertDescription className="text-lg">{winner} has won the battle! {winner === 'Player' && `Your score: ${Math.max(0, 100 - turns)}`}</AlertDescription>
         </Alert>
       )}
 
-      <div className="flex flex-col md:flex-row gap-8 lg:gap-16 justify-center w-full">
-        <div className="flex flex-col items-center gap-2 flex-1">
-          <h2 className="text-xl font-bold font-headline">Your Fleet</h2>
+      <div className="flex flex-col md:flex-row gap-8 lg:gap-12 justify-center w-full">
+        <div className="flex flex-col items-center gap-3 flex-1">
+          <h2 className="text-xl font-bold font-headline tracking-widest">Your Fleet</h2>
           {renderGrid(playerGrid, true, (x, y) => handlePlacementClick(x, y))}
         </div>
-        <div className="flex flex-col items-center gap-2 flex-1">
-          <h2 className="text-xl font-bold font-headline">Opponent's Waters</h2>
+        <div className="flex flex-col items-center gap-3 flex-1">
+          <h2 className="text-xl font-bold font-headline tracking-widest">Opponent's Waters</h2>
           {renderGrid(opponentGrid, false, (x, y) => handleBattleClick(x, y))}
         </div>
       </div>
       
-      <div className="w-full max-w-md space-y-4">
-        {gameState === 'placement' && currentShipIndex < SHIPS.length && (
-            <Card className="p-4">
-              <h3 className="font-bold text-center">Place your ships</h3>
-              <p className="text-muted-foreground text-center mb-2">
-                Placing: {SHIPS[currentShipIndex].name} (Size: {SHIPS[currentShipIndex].size})
-              </p>
-              <Button onClick={() => setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal')} className="w-full">
-                  Toggle Orientation ({orientation})
-              </Button>
-            </Card>
-        )}
+      <div className="w-full max-w-lg space-y-4">
+        <Card className="bg-muted/30">
+            <CardContent className="p-4">
+                {gameState === 'placement' && currentShipIndex < SHIPS.length && (
+                    <div className='text-center space-y-2'>
+                      <h3 className="font-bold text-lg font-headline">Place your ships</h3>
+                      <p className="text-muted-foreground">
+                        Placing: {SHIPS[currentShipIndex].name} (Size: {SHIPS[currentShipIndex].size})
+                      </p>
+                      <Button onClick={() => setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal')} className="w-full">
+                          <RotateCw />
+                          Rotate Ship ({orientation})
+                      </Button>
+                    </div>
+                )}
 
-        {gameState === 'battle' && winner === null && (
-          <Alert>
-            <Ship className="h-4 w-4" />
-            <AlertTitle>{turnMessage}</AlertTitle>
-          </Alert>
-        )}
+                {gameState === 'battle' && winner === null && (
+                <Alert variant="default" className="text-center border-primary/50 bg-transparent">
+                    <Ship className="h-4 w-4" />
+                    <AlertTitle className="font-headline text-lg">{turnMessage || "Battle commencing..."}</AlertTitle>
+                    <AlertDescription>Click on the opponent's grid to fire.</AlertDescription>
+                </Alert>
+                )}
+
+                {gameState === 'gameover' && (
+                  <div className='text-center'>
+                     <p className='text-lg text-muted-foreground'>The battle is over. Care for another round?</p>
+                  </div>
+                )}
+            </CardContent>
+        </Card>
         
         <div className="flex gap-4">
-            <Card className="flex-1">
-                <CardContent className="p-4 text-center">
-                    <p className="font-bold text-lg">{turns}</p>
-                    <p className="text-sm text-muted-foreground">Turns Taken</p>
+            <Card className="flex-1 bg-muted/30">
+                <CardHeader className="p-4 text-center">
+                    <CardTitle className="text-sm text-muted-foreground">Turns Taken</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 text-center">
+                    <p className="font-bold font-mono text-3xl">{turns}</p>
                 </CardContent>
             </Card>
-            <Card className="flex-1">
-                <CardContent className="p-4 text-center">
-                    <div className='flex items-center justify-center gap-2'>
-                        <Trophy className="h-4 w-4 text-yellow-500"/>
-                        <p className="font-bold text-lg">{highScore}</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">High Score</p>
+            <Card className="flex-1 bg-muted/30">
+                <CardHeader className="p-4 text-center">
+                    <CardTitle className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                         <Trophy className="h-4 w-4 text-yellow-500"/> High Score
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 text-center">
+                    <p className="font-bold font-mono text-3xl">{highScore}</p>
                 </CardContent>
             </Card>
         </div>
 
-        <Button onClick={resetGame} className="w-full">New Game</Button>
+        <Button onClick={resetGame} className="w-full" size="lg">New Game</Button>
       </div>
     </div>
   );
