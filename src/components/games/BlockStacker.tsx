@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Joystick } from '@/components/Joystick';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
@@ -52,6 +54,9 @@ export function BlockStacker() {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const isMobile = useIsMobile();
+  const lastMoveTime = useRef(0);
+  const moveDebounce = 150; // ms for joystick move repeat rate
 
   const isValidMove = useCallback((piece: Piece, pos: Position, gameBoard: number[][]) => {
     for (let y = 0; y < piece.shape.length; y++) {
@@ -73,27 +78,8 @@ export function BlockStacker() {
     return true;
   }, []);
 
-  const rotatePiece = useCallback(() => {
-    if (gameOver || isPaused) return;
-    const newShape = currentPiece.shape[0].map((_, colIndex) =>
-      currentPiece.shape.map(row => row[colIndex]).reverse()
-    );
-    const newPiece = { ...currentPiece, shape: newShape };
-    if (isValidMove(newPiece, position, board)) {
-      setCurrentPiece(newPiece);
-    }
-  }, [board, currentPiece, gameOver, isPaused, isValidMove, position]);
-
-  const movePiece = useCallback((dir: number) => {
-    if (gameOver || isPaused) return;
-    const newPosition = { ...position, x: position.x + dir };
-    if (isValidMove(currentPiece, newPosition, board)) {
-      setPosition(newPosition);
-    }
-  }, [board, currentPiece, gameOver, isPaused, isValidMove, position]);
-
   const dropPiece = useCallback(() => {
-    if (isPaused) return;
+    if (isPaused || gameOver) return;
     const newPosition = { ...position, y: position.y + 1 };
     if (isValidMove(currentPiece, newPosition, board)) {
       setPosition(newPosition);
@@ -102,7 +88,9 @@ export function BlockStacker() {
       currentPiece.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
           if (cell) {
-            newBoard[position.y + y][position.x + x] = currentPiece.colorId;
+            if (position.y + y >= 0) { // Ensure we don't write out of bounds when piece spawns at top
+                newBoard[position.y + y][position.x + x] = currentPiece.colorId;
+            }
           }
         });
       });
@@ -132,33 +120,60 @@ export function BlockStacker() {
         setPosition(newPiecePosition);
       }
     }
-  }, [board, currentPiece, isPaused, isValidMove, position]);
+  }, [board, currentPiece, isPaused, gameOver, isValidMove, position]);
   
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-      if (e.key === 'p' || e.key === 'P') {
-        setIsPaused(prev => !prev);
+  const handleControl = useCallback((action: 'left' | 'right' | 'down' | 'rotate' | 'pause') => {
+      if (action === 'pause') {
+        setIsPaused(p => !p);
         return;
       }
+
       if (gameOver || isPaused) return;
-      switch (e.key) {
-        case 'ArrowLeft':
-          e.preventDefault();
-          movePiece(-1);
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          movePiece(1);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          dropPiece();
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          rotatePiece();
-          break;
+
+      if (action === 'rotate') {
+        const newShape = currentPiece.shape[0].map((_, colIndex) =>
+          currentPiece.shape.map(row => row[colIndex]).reverse()
+        );
+        const newPiece = { ...currentPiece, shape: newShape };
+        if (isValidMove(newPiece, position, board)) {
+          setCurrentPiece(newPiece);
+        }
+      } else if (action === 'left' || action === 'right') {
+        const dir = action === 'left' ? -1 : 1;
+        const newPosition = { ...position, x: position.x + dir };
+        if (isValidMove(currentPiece, newPosition, board)) {
+          setPosition(newPosition);
+        }
+      } else if (action === 'down') {
+        dropPiece();
       }
-    },[gameOver, isPaused, movePiece, dropPiece, rotatePiece]);
+  }, [gameOver, isPaused, currentPiece, position, board, isValidMove, dropPiece]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+      e.preventDefault();
+      switch (e.key) {
+        case 'ArrowLeft': handleControl('left'); break;
+        case 'ArrowRight': handleControl('right'); break;
+        case 'ArrowDown': handleControl('down'); break;
+        case 'ArrowUp': handleControl('rotate'); break;
+        case 'p': case 'P': handleControl('pause'); break;
+      }
+    }, [handleControl]);
+
+    const handleJoystickMove = (dir: 'up' | 'down' | 'left' | 'right' | 'center') => {
+        if (dir === 'center' || isPaused || gameOver) return;
+        
+        const now = Date.now();
+        if (now - lastMoveTime.current < moveDebounce) return;
+        lastMoveTime.current = now;
+
+        switch(dir) {
+            case 'up': handleControl('rotate'); break;
+            case 'down': handleControl('down'); break;
+            case 'left': handleControl('left'); break;
+            case 'right': handleControl('right'); break;
+        }
+    };
 
   const startGame = useCallback(() => {
     setBoard(createEmptyBoard());
@@ -236,7 +251,7 @@ export function BlockStacker() {
         <Button onClick={startGame} className="w-full">
           {gameOver ? 'Play Again' : 'Restart'}
         </Button>
-        <Button onClick={() => setIsPaused(p => !p)} className="w-full" variant="outline">
+        <Button onClick={() => handleControl('pause')} className="w-full" variant="outline">
           {isPaused ? 'Resume' : 'Pause'}
         </Button>
         <div className="text-sm text-muted-foreground p-2 text-center border rounded-lg">
@@ -246,6 +261,7 @@ export function BlockStacker() {
           <p>'P' to pause</p>
         </div>
       </div>
+      {isMobile && !gameOver && !isPaused && <Joystick onMove={handleJoystickMove} />}
     </div>
   );
 };

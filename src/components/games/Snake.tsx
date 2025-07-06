@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Joystick } from '@/components/Joystick';
 
 const BOARD_SIZE = 20;
 const CELL_SIZE = 20; // in pixels
@@ -19,6 +21,7 @@ const Snake = () => {
   const [speed, setSpeed] = useState<number | null>(200);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
+  const isMobile = useIsMobile();
 
   const resetGame = useCallback(() => {
     setSnake([{ x: 10, y: 10 }]);
@@ -29,27 +32,43 @@ const Snake = () => {
     setScore(0);
   }, []);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    switch (e.key) {
-      case 'ArrowUp':
+  const changeDirection = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
+    switch (dir) {
+      case 'up':
         if (direction.y === 0) setDirection({ x: 0, y: -1 });
         break;
-      case 'ArrowDown':
+      case 'down':
         if (direction.y === 0) setDirection({ x: 0, y: 1 });
         break;
-      case 'ArrowLeft':
+      case 'left':
         if (direction.x === 0) setDirection({ x: -1, y: 0 });
         break;
-      case 'ArrowRight':
+      case 'right':
         if (direction.x === 0) setDirection({ x: 1, y: 0 });
         break;
     }
   }, [direction]);
 
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowUp': changeDirection('up'); break;
+      case 'ArrowDown': changeDirection('down'); break;
+      case 'ArrowLeft': changeDirection('left'); break;
+      case 'ArrowRight': changeDirection('right'); break;
+    }
+  }, [changeDirection]);
+
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+  
+  const handleJoystickMove = (dir: 'up' | 'down' | 'left' | 'right' | 'center') => {
+      if (gameOver) return;
+      if (dir !== 'center') {
+          changeDirection(dir);
+      }
+  }
 
   const gameLoop = useCallback(() => {
     const newSnake = [...snake];
@@ -141,6 +160,7 @@ const Snake = () => {
           </div>
         )}
       </div>
+      {isMobile && !gameOver && <Joystick onMove={handleJoystickMove} />}
     </div>
   );
 };
