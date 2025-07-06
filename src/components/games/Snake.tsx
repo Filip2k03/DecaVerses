@@ -123,38 +123,51 @@ const Snake = () => {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <Card>
+      <Card className="bg-transparent border-none shadow-none">
         <CardContent className="p-2">
             <div
+                className="relative bg-muted/20"
                 style={{
-                width: BOARD_SIZE * CELL_SIZE,
-                height: BOARD_SIZE * CELL_SIZE,
-                display: 'grid',
-                gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
-                gridTemplateRows: `repeat(${BOARD_SIZE}, 1fr)`,
-                border: '2px solid hsl(var(--primary))',
-                backgroundColor: 'hsl(var(--muted))'
+                    width: BOARD_SIZE * CELL_SIZE,
+                    height: BOARD_SIZE * CELL_SIZE,
+                    border: '2px solid hsl(var(--primary))',
+                    boxShadow: 'inset 0 0 15px hsl(var(--primary)/0.5), 0 0 15px hsl(var(--primary)/0.5)',
                 }}
             >
-                {snake.map((segment, index) => (
+                {/* Grid pattern */}
+                <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(hsl(var(--primary)/0.1) 1px, transparent 1px), linear-gradient(to right, hsl(var(--primary)/0.1) 1px, transparent 1px)', backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px` }} />
+
                 <div
-                    key={index}
                     style={{
-                    gridColumnStart: segment.x + 1,
-                    gridRowStart: segment.y + 1,
-                    backgroundColor: index === 0 ? 'hsl(var(--foreground))' : 'hsl(var(--accent))',
-                    borderRadius: '4px'
+                        width: BOARD_SIZE * CELL_SIZE,
+                        height: BOARD_SIZE * CELL_SIZE,
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
+                        gridTemplateRows: `repeat(${BOARD_SIZE}, 1fr)`,
                     }}
-                />
-                ))}
-                <div
-                style={{
-                    gridColumnStart: food.x + 1,
-                    gridRowStart: food.y + 1,
-                    backgroundColor: 'hsl(var(--destructive))',
-                    borderRadius: '50%'
-                }}
-                />
+                >
+                    {snake.map((segment, index) => (
+                    <div
+                        key={index}
+                        style={{
+                            gridColumnStart: segment.x + 1,
+                            gridRowStart: segment.y + 1,
+                            backgroundColor: index === 0 ? 'hsl(var(--accent))' : 'hsl(var(--primary))',
+                            borderRadius: '4px',
+                            boxShadow: `0 0 8px ${index === 0 ? 'hsl(var(--accent))' : 'hsl(var(--primary))'}`
+                        }}
+                    />
+                    ))}
+                    <div
+                        style={{
+                            gridColumnStart: food.x + 1,
+                            gridRowStart: food.y + 1,
+                            backgroundColor: 'hsl(var(--destructive))',
+                            borderRadius: '50%',
+                            boxShadow: '0 0 10px hsl(var(--destructive))'
+                        }}
+                    />
+                </div>
             </div>
         </CardContent>
       </Card>

@@ -57,22 +57,24 @@ const TicTacToe = () => {
 
   const renderSquare = (index: number) => {
     const value = board[index];
+    const xGlow = 'drop-shadow(0 0 8px hsl(var(--primary)))';
+    const oGlow = 'drop-shadow(0 0 8px hsl(var(--accent)))';
+    
     return (
       <button
         className={cn(
-          "w-24 h-24 flex items-center justify-center text-4xl font-bold border rounded-lg transition-all duration-200",
-          "border-primary/20 bg-background",
-          "hover:bg-accent focus:bg-accent",
+          "w-24 h-24 flex items-center justify-center text-4xl font-bold rounded-lg transition-all duration-200",
+          "bg-background/50 backdrop-blur-sm",
+          "hover:bg-accent/20 focus:bg-accent/20",
           "disabled:cursor-not-allowed",
-          value === 'X' ? "text-primary" : "text-destructive",
-          winner && "bg-muted/50"
+          value === 'X' ? "text-primary" : "text-accent",
         )}
         onClick={() => handleClick(index)}
         disabled={!!board[index] || !!winner}
         aria-label={`Square ${index + 1}`}
       >
-        {value === 'X' && <X className="h-12 w-12" />}
-        {value === 'O' && <Circle className="h-12 w-12" />}
+        {value === 'X' && <X className="h-16 w-16" style={{ filter: xGlow }} />}
+        {value === 'O' && <Circle className="h-16 w-16" style={{ filter: oGlow }} />}
       </button>
     );
   };
@@ -87,12 +89,12 @@ const TicTacToe = () => {
   }
 
   return (
-    <Card className="w-full max-w-md bg-card/70 backdrop-blur-sm">
+    <Card className="w-full max-w-md bg-card/70 backdrop-blur-sm border-none">
       <CardHeader>
-        <CardTitle className="text-center text-2xl">{status}</CardTitle>
+        <CardTitle className="text-center text-2xl" style={{textShadow: '0 0 8px hsl(var(--foreground))'}}>{status}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center space-y-4">
-        <div className="grid grid-cols-3 gap-2 bg-primary/10 p-2 rounded-lg">
+        <div className="grid grid-cols-3 gap-2 bg-primary/20 p-2 rounded-lg" style={{boxShadow: 'inset 0 0 10px hsl(var(--primary)/0.5)'}}>
           {Array(9).fill(null).map((_, i) => renderSquare(i))}
         </div>
         <Button onClick={resetGame}>
