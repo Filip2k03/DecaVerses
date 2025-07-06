@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { Game } from '@/lib/data';
 import { Users, Play } from 'lucide-react';
 import { Badge } from './ui/badge';
+import Link from 'next/link';
 
 interface GameCardProps {
   game: Game;
@@ -19,8 +20,8 @@ export function GameCard({ game }: GameCardProps) {
           <Image
             src={game.image}
             alt={game.title}
-            layout="fill"
-            objectFit="cover"
+            fill
+            className="object-cover"
             data-ai-hint={game.aiHint}
           />
         </div>
@@ -31,10 +32,12 @@ export function GameCard({ game }: GameCardProps) {
         <CardDescription className="mt-2 text-sm">{game.description}</CardDescription>
       </CardContent>
       <CardFooter className="flex justify-between p-4 bg-muted/50">
-        <Button>
-          <Play className="mr-2 h-4 w-4" />
-          Play
-        </Button>
+        <Link href={`/play/${game.id}`}>
+          <Button>
+            <Play className="mr-2 h-4 w-4" />
+            Play
+          </Button>
+        </Link>
         <Button variant="outline" size="icon" aria-label="Local Multiplayer">
           <Users className="h-5 w-5" />
         </Button>
