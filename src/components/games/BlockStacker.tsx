@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Joystick } from '@/components/Joystick';
+import { useGame } from '@/context/GameContext';
+import { Trophy } from 'lucide-react';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
@@ -58,6 +60,9 @@ export function BlockStacker() {
   const lastMoveTime = useRef(0);
   const moveDebounce = 150; // ms for joystick move repeat rate
 
+  const { scores, updateScore } = useGame();
+  const highScore = scores[8] || 0;
+
   const isValidMove = useCallback((piece: Piece, pos: Position, gameBoard: number[][]) => {
     for (let y = 0; y < piece.shape.length; y++) {
       for (let x = 0; x < piece.shape[y].length; x++) {
@@ -78,6 +83,11 @@ export function BlockStacker() {
     return true;
   }, []);
 
+  const handleGameOver = useCallback(() => {
+    setGameOver(true);
+    updateScore(8, score);
+  }, [score, updateScore]);
+
   const dropPiece = useCallback(() => {
     if (isPaused || gameOver) return;
     const newPosition = { ...position, y: position.y + 1 };
@@ -88,7 +98,7 @@ export function BlockStacker() {
       currentPiece.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
           if (cell) {
-            if (position.y + y >= 0) { // Ensure we don't write out of bounds when piece spawns at top
+            if (position.y + y >= 0) {
                 newBoard[position.y + y][position.x + x] = currentPiece.colorId;
             }
           }
@@ -107,20 +117,20 @@ export function BlockStacker() {
       const newEmptyRows = Array.from(Array(linesCleared), () => Array(BOARD_WIDTH).fill(0));
       const finalBoard = [...newEmptyRows, ...boardWithoutFullLines];
       if (linesCleared > 0) {
-        setScore(prev => prev + [0, 10, 30, 50, 80][linesCleared]);
+        setScore(prev => prev + [0, 10, 30, 50, 80][linesCleared] * linesCleared);
       }
       setBoard(finalBoard);
 
       const newPiece = randomTetromino();
       const newPiecePosition = { x: Math.floor(BOARD_WIDTH / 2) - 2, y: 0 };
       if (!isValidMove(newPiece, newPiecePosition, finalBoard)) {
-        setGameOver(true);
+        handleGameOver();
       } else {
         setCurrentPiece(newPiece);
         setPosition(newPiecePosition);
       }
     }
-  }, [board, currentPiece, isPaused, gameOver, isValidMove, position]);
+  }, [board, currentPiece, isPaused, gameOver, isValidMove, position, handleGameOver]);
   
   const handleControl = useCallback((action: 'left' | 'right' | 'down' | 'rotate' | 'pause') => {
       if (action === 'pause') {
@@ -247,6 +257,13 @@ export function BlockStacker() {
         <div className="p-4 bg-muted rounded-lg text-center">
           <h3 className="text-lg font-bold">Score</h3>
           <p className="text-2xl font-mono">{score}</p>
+        </div>
+         <div className="p-4 bg-muted rounded-lg text-center">
+          <h3 className="text-lg font-bold flex items-center justify-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            High Score
+            </h3>
+          <p className="text-2xl font-mono">{highScore}</p>
         </div>
         <Button onClick={startGame} className="w-full">
           {gameOver ? 'Play Again' : 'Restart'}

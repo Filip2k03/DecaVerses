@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Joystick } from '@/components/Joystick';
+import { useGame } from '@/context/GameContext';
+import { Trophy } from 'lucide-react';
 
 type Board = number[][];
 
@@ -20,6 +22,8 @@ const Game2048 = () => {
   const isMobile = useIsMobile();
   const lastMoveTime = useRef(0);
   const moveDebounce = 200; // ms to prevent accidental double moves
+  const { scores, updateScore } = useGame();
+  const highScore = scores[4] || 0;
 
   const addNumber = useCallback((newBoard: Board): Board => {
     const boardCopy = JSON.parse(JSON.stringify(newBoard));
@@ -37,6 +41,22 @@ const Game2048 = () => {
         boardCopy[row][col] = Math.random() > 0.9 ? 4 : 2;
     }
     return boardCopy;
+  }, []);
+
+  const handleGameOver = useCallback(() => {
+    setGameOver(true);
+    updateScore(4, score);
+  }, [score, updateScore]);
+
+  const isGameOver = useCallback((currentBoard: Board): boolean => {
+    for (let i = 0; i < GRID_SIZE; i++) {
+      for (let j = 0; j < GRID_SIZE; j++) {
+        if (currentBoard[i][j] === 0) return false;
+        if (i < GRID_SIZE - 1 && currentBoard[i][j] === currentBoard[i + 1][j]) return false;
+        if (j < GRID_SIZE - 1 && currentBoard[i][j] === currentBoard[i][j + 1]) return false;
+      }
+    }
+    return true;
   }, []);
 
   const startGame = useCallback(() => {
@@ -104,17 +124,6 @@ const Game2048 = () => {
     return newBoard;
   };
 
-  const isGameOver = useCallback((currentBoard: Board): boolean => {
-    for (let i = 0; i < GRID_SIZE; i++) {
-      for (let j = 0; j < GRID_SIZE; j++) {
-        if (currentBoard[i][j] === 0) return false;
-        if (i < GRID_SIZE - 1 && currentBoard[i][j] === currentBoard[i + 1][j]) return false;
-        if (j < GRID_SIZE - 1 && currentBoard[i][j] === currentBoard[i][j + 1]) return false;
-      }
-    }
-    return true;
-  }, []);
-
   const handleMove = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     if (gameOver) return;
 
@@ -143,10 +152,10 @@ const Game2048 = () => {
       setBoard(newBoardWithNumber);
       setScore(s => s + newScore);
       if (isGameOver(newBoardWithNumber)) {
-        setGameOver(true);
+        handleGameOver();
       }
     }
-  }, [board, gameOver, addNumber, isGameOver]);
+  }, [board, gameOver, addNumber, isGameOver, handleGameOver]);
   
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (gameOver) return;
@@ -196,11 +205,17 @@ const Game2048 = () => {
         <Card className="w-full max-w-md relative overflow-hidden">
             <CardHeader>
                 <div className="flex justify-between items-center">
-                <CardTitle>2048</CardTitle>
-                <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Score</p>
-                    <p className="text-xl font-bold">{score}</p>
-                </div>
+                    <CardTitle>2048</CardTitle>
+                    <div className="flex gap-4">
+                        <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Score</p>
+                            <p className="text-xl font-bold">{score}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-sm text-muted-foreground flex items-center gap-1"><Trophy className='h-4 w-4 text-yellow-500' /> Best</p>
+                            <p className="text-xl font-bold">{highScore}</p>
+                        </div>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">

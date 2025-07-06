@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, User, Sparkles, Settings } from 'lucide-react';
+import { Gamepad2, Trophy, Sparkles, Settings } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './ThemeToggle';
@@ -12,7 +12,7 @@ export function Header() {
 
   const navItems = [
     { href: '/', label: 'Games', icon: Gamepad2 },
-    { href: '/profile', label: 'Profile', icon: User },
+    { href: '/scores', label: 'Scores', icon: Trophy },
     { href: '/recommendations', label: 'For You', icon: Sparkles },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];

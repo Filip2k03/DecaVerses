@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import type { LucideProps } from 'lucide-react';
-import { Blocks, Ship, Crown, Calculator, Grid3x3 } from 'lucide-react';
+import { Blocks, Ship, Crown, Calculator, Grid3x3, Bomb } from 'lucide-react';
 import { TicTacToeIcon, SnakeIcon } from '@/components/GameIcons';
 
 const iconMap: Record<string, FC<LucideProps>> = {
@@ -10,6 +10,7 @@ const iconMap: Record<string, FC<LucideProps>> = {
   '2048': Calculator,
   Chess: Crown,
   Battleship: Ship,
+  Minesweeper: Bomb,
   BlockStacker: Blocks,
 };
 

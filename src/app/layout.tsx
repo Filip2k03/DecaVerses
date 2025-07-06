@@ -3,6 +3,7 @@ import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from '@/components/ui/toaster';
 import { SettingsProvider } from '@/context/SettingsContext';
+import { GameProvider } from '@/context/GameContext';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 
 export const metadata: Metadata = {
@@ -24,14 +25,16 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <SettingsProvider>
-          <div className="flex min-h-screen w-full flex-col">
-            <Header />
-            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 mb-16 md:mb-0">
-              {children}
-            </main>
-          </div>
-          <Toaster />
-          <BackgroundMusic />
+          <GameProvider>
+            <div className="flex min-h-screen w-full flex-col">
+              <Header />
+              <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 mb-16 md:mb-0">
+                {children}
+              </main>
+            </div>
+            <Toaster />
+            <BackgroundMusic />
+          </GameProvider>
         </SettingsProvider>
       </body>
     </html>

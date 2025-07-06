@@ -1,13 +1,14 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Ship, Target, Waves, AlertTriangle } from 'lucide-react';
+import { Ship, Target, Waves, AlertTriangle, Trophy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useGame } from '@/context/GameContext';
 
 const GRID_SIZE = 10;
 type CellState = 'empty' | 'ship' | 'hit' | 'miss';
@@ -32,31 +33,15 @@ const Battleship = () => {
   const [winner, setWinner] = useState<'Player' | 'Opponent' | null>(null);
   const [playerHits, setPlayerHits] = useState(0);
   const [opponentHits, setOpponentHits] = useState(0);
+  const [turns, setTurns] = useState(0);
   const [turnMessage, setTurnMessage] = useState<string>('');
   const { toast } = useToast();
+  const { scores, updateScore } = useGame();
+  const highScore = scores[6] || 0;
 
   const totalShipParts = useMemo(() => SHIPS.reduce((sum, ship) => sum + ship.size, 0), []);
 
-  useEffect(() => {
-    if (gameState === 'placement' && currentShipIndex >= SHIPS.length) {
-      placeOpponentShips();
-      setGameState('battle');
-      setTurnMessage("Your turn! Fire at the opponent's grid.");
-    }
-  }, [currentShipIndex, gameState]);
-
-  useEffect(() => {
-    if (opponentHits === totalShipParts) {
-      setWinner('Player');
-      setGameState('gameover');
-    }
-    if (playerHits === totalShipParts) {
-      setWinner('Opponent');
-      setGameState('gameover');
-    }
-  }, [playerHits, opponentHits, totalShipParts]);
-
-  const placeOpponentShips = () => {
+  const placeOpponentShips = useCallback(() => {
     let opponentGridWithShips = createEmptyGrid();
     for (const ship of SHIPS) {
       let placed = false;
@@ -71,14 +56,37 @@ const Battleship = () => {
         }
         attempts++;
       }
-      if (!placed) {
-        // This is a failsafe. On a 10x10 grid this should not be an issue.
-        console.error("Could not place opponent ship:", ship.name);
-      }
+      if (!placed) console.error("Could not place opponent ship:", ship.name);
     }
     setOpponentGrid(opponentGridWithShips);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (gameState === 'placement' && currentShipIndex >= SHIPS.length) {
+      placeOpponentShips();
+      setGameState('battle');
+      setTurnMessage("Your turn! Fire at the opponent's grid.");
+    }
+  }, [currentShipIndex, gameState, placeOpponentShips]);
   
+  const handleGameEnd = useCallback((gameWinner: 'Player' | 'Opponent') => {
+      setWinner(gameWinner);
+      setGameState('gameover');
+      if (gameWinner === 'Player') {
+        const score = Math.max(0, 100 - turns);
+        updateScore(6, score);
+      }
+  }, [turns, updateScore]);
+
+  useEffect(() => {
+    if (opponentHits === totalShipParts) {
+      handleGameEnd('Player');
+    }
+    if (playerHits === totalShipParts) {
+      handleGameEnd('Opponent');
+    }
+  }, [playerHits, opponentHits, totalShipParts, handleGameEnd]);
+
   const canPlaceShip = (grid: Grid, size: number, col: number, row: number, orient: 'horizontal' | 'vertical') => {
     for (let i = 0; i < size; i++) {
         const checkCol = orient === 'horizontal' ? col + i : col;
@@ -141,6 +149,7 @@ const Battleship = () => {
   const handleBattleClick = (col: number, row: number) => {
     if (gameState !== 'battle' || opponentGrid[row][col] === 'hit' || opponentGrid[row][col] === 'miss' || winner) return;
     
+    setTurns(t => t + 1);
     const newOpponentGrid = opponentGrid.map(r => [...r]);
     if (newOpponentGrid[row][col] === 'ship') {
         newOpponentGrid[row][col] = 'hit';
@@ -150,7 +159,7 @@ const Battleship = () => {
     }
     setOpponentGrid(newOpponentGrid);
     
-    if (winner === null) {
+    if (winner === null && (opponentHits + 1) < totalShipParts) {
       setTimeout(opponentTurn, 600);
     }
   };
@@ -164,6 +173,7 @@ const Battleship = () => {
     setWinner(null);
     setPlayerHits(0);
     setOpponentHits(0);
+    setTurns(0);
     setTurnMessage('');
   };
 
@@ -197,7 +207,7 @@ const Battleship = () => {
         <Alert variant={winner === 'Player' ? 'default' : 'destructive'} className="max-w-md">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Game Over!</AlertTitle>
-            <AlertDescription>{winner} has won the game!</AlertDescription>
+            <AlertDescription>{winner} has won the game! {winner === 'Player' && `Your score: ${Math.max(0, 100 - turns)}`}</AlertDescription>
         </Alert>
       )}
 
@@ -231,19 +241,24 @@ const Battleship = () => {
             <AlertTitle>{turnMessage}</AlertTitle>
           </Alert>
         )}
-
-        <Card>
-            <CardContent className="p-4 flex justify-around text-center">
-                <div>
-                    <p className="font-bold text-lg">{playerHits}/{totalShipParts}</p>
-                    <p className="text-sm text-muted-foreground">Player Ship Parts Hit</p>
-                </div>
-                <div>
-                    <p className="font-bold text-lg">{opponentHits}/{totalShipParts}</p>
-                    <p className="text-sm text-muted-foreground">Opponent Ship Parts Hit</p>
-                </div>
-            </CardContent>
-        </Card>
+        
+        <div className="flex gap-4">
+            <Card className="flex-1">
+                <CardContent className="p-4 text-center">
+                    <p className="font-bold text-lg">{turns}</p>
+                    <p className="text-sm text-muted-foreground">Turns Taken</p>
+                </CardContent>
+            </Card>
+            <Card className="flex-1">
+                <CardContent className="p-4 text-center">
+                    <div className='flex items-center justify-center gap-2'>
+                        <Trophy className="h-4 w-4 text-yellow-500"/>
+                        <p className="font-bold text-lg">{highScore}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">High Score</p>
+                </CardContent>
+            </Card>
+        </div>
 
         <Button onClick={resetGame} className="w-full">New Game</Button>
       </div>

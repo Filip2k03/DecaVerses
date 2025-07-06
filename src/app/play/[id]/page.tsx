@@ -9,6 +9,7 @@ import { Game2048 } from '@/components/games/Game2048';
 import { Chess } from '@/components/games/Chess';
 import { Battleship } from '@/components/games/Battleship';
 import { DynamicGameIcon } from '@/components/DynamicGameIcon';
+import { Minesweeper } from '@/components/games/Minesweeper';
 
 export default function GamePage({ params }: { params: { id: string } }) {
   const game = games.find((g) => g.id === parseInt(params.id, 10));
@@ -31,6 +32,8 @@ export default function GamePage({ params }: { params: { id: string } }) {
         return <Chess />;
       case 6:
         return <Battleship />;
+      case 7:
+        return <Minesweeper />;
       case 8: // Block Stacker
         return <BlockStacker />;
       default:

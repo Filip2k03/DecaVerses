@@ -7,7 +7,7 @@ import { Trophy } from 'lucide-react';
 import { DynamicGameIcon } from '@/components/DynamicGameIcon';
 import { useGame } from '@/context/GameContext';
 
-export default function ProfilePage() {
+export default function ScoresPage() {
   const { scores } = useGame();
 
   const sortedGames = [...games].sort((a, b) => {

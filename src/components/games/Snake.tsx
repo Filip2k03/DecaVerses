@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Joystick } from '@/components/Joystick';
+import { useGame } from '@/context/GameContext';
+import { Trophy } from 'lucide-react';
 
 const BOARD_SIZE = 20;
 const CELL_SIZE = 20; // in pixels
@@ -22,6 +24,14 @@ const Snake = () => {
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const isMobile = useIsMobile();
+  const { scores, updateScore } = useGame();
+  const highScore = scores[2] || 0;
+
+  const handleGameOver = useCallback(() => {
+    setGameOver(true);
+    setSpeed(null);
+    updateScore(2, score);
+  }, [score, updateScore]);
 
   const resetGame = useCallback(() => {
     setSnake([{ x: 10, y: 10 }]);
@@ -78,14 +88,14 @@ const Snake = () => {
     
     // Wall collision
     if (head.x < 0 || head.x >= BOARD_SIZE || head.y < 0 || head.y >= BOARD_SIZE) {
-      setGameOver(true);
+      handleGameOver();
       return;
     }
     
     // Self collision
     for (let i = 1; i < newSnake.length; i++) {
         if (head.x === newSnake[i].x && head.y === newSnake[i].y) {
-            setGameOver(true);
+            handleGameOver();
             return;
         }
     }
@@ -102,13 +112,10 @@ const Snake = () => {
     }
     
     setSnake(newSnake);
-  }, [snake, direction, food, speed]);
+  }, [snake, direction, food, speed, handleGameOver]);
 
   useEffect(() => {
-    if (gameOver) {
-      setSpeed(null);
-      return;
-    }
+    if (gameOver) return;
     const interval = setInterval(gameLoop, speed);
     return () => clearInterval(interval);
   }, [gameLoop, speed, gameOver]);
@@ -152,7 +159,17 @@ const Snake = () => {
         </CardContent>
       </Card>
       <div className="text-center">
-        <p className="text-2xl font-bold">Score: {score}</p>
+        <div className='flex gap-4 mb-4 justify-center'>
+            <div className='p-2 rounded-md bg-muted'>
+                <p className="text-sm text-muted-foreground">Score</p>
+                <p className="text-2xl font-bold">{score}</p>
+            </div>
+            <div className='p-2 rounded-md bg-muted'>
+                <p className="text-sm text-muted-foreground flex items-center gap-1"><Trophy className='h-4 w-4 text-yellow-500' /> High Score</p>
+                <p className="text-2xl font-bold">{highScore}</p>
+            </div>
+        </div>
+
         {gameOver && (
           <div className="mt-4">
             <p className="text-2xl font-bold text-destructive">Game Over!</p>
