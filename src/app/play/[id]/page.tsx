@@ -2,6 +2,12 @@ import { games } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { BlockStacker } from '@/components/games/BlockStacker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TicTacToe } from '@/components/games/TicTacToe';
+import { Snake } from '@/components/games/Snake';
+import { Sudoku } from '@/components/games/Sudoku';
+import { Game2048 } from '@/components/games/Game2048';
+import { Chess } from '@/components/games/Chess';
+import { Battleship } from '@/components/games/Battleship';
 
 export default function GamePage({ params }: { params: { id: string } }) {
   const game = games.find((g) => g.id === parseInt(params.id, 10));
@@ -12,6 +18,18 @@ export default function GamePage({ params }: { params: { id: string } }) {
 
   const renderGame = () => {
     switch (game.id) {
+      case 1:
+        return <TicTacToe />;
+      case 2:
+        return <Snake />;
+      case 3:
+        return <Sudoku />;
+      case 4:
+        return <Game2048 />;
+      case 5:
+        return <Chess />;
+      case 6:
+        return <Battleship />;
       case 8: // Block Stacker
         return <BlockStacker />;
       default:
