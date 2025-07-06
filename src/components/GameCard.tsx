@@ -13,11 +13,12 @@ interface GameCardProps {
   game: Game;
 }
 
+const SCORED_GAME_IDS = [2, 4, 6, 7, 8, 9, 12, 13, 14, 15, 18, 19];
+
 export function GameCard({ game }: GameCardProps) {
   const { scores } = useGame();
   const highScore = scores[game.id] || 0;
-  const isScoredGame = game.category !== 'Strategy' || ['Battleship'].includes(game.title);
-
+  const isScoredGame = SCORED_GAME_IDS.includes(game.id);
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all duration-300 border border-transparent hover:border-primary hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)] hover:-translate-y-1">

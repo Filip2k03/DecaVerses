@@ -7,6 +7,8 @@ import { Trophy } from 'lucide-react';
 import { DynamicGameIcon } from '@/components/DynamicGameIcon';
 import { useGame } from '@/context/GameContext';
 
+const SCORED_GAME_IDS = [2, 4, 6, 7, 8, 9, 12, 13, 14, 15, 18, 19];
+
 export default function ScoresPage() {
   const { scores } = useGame();
 
@@ -50,7 +52,7 @@ export default function ScoresPage() {
             <TableBody>
               {sortedGames.map((game) => {
                 const score = scores[game.id] || 0;
-                const isScoredGame = game.category !== 'Strategy' || ['Battleship'].includes(game.title);
+                const isScoredGame = SCORED_GAME_IDS.includes(game.id);
                 return (
                   <TableRow key={game.id}>
                     <TableCell>

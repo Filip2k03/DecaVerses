@@ -53,3 +53,102 @@ export const BearIcon: FC<LucideProps> = (props) => (
   </svg>
 );
 BearIcon.displayName = 'BearIcon';
+
+export const ConnectFourIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="3" />
+    <line x1="12" y1="2" x2="12" y2="6" />
+    <line x1="12" y1="18" x2="12" y2="22" />
+    <line x1="22" y1="12" x2="18" y2="12" />
+    <line x1="6" y1="12" x2="2" y2="12" />
+  </svg>
+);
+ConnectFourIcon.displayName = 'ConnectFourIcon';
+
+export const PongIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 8v8" />
+    <path d="M21 8v8" />
+    <rect x="11" y="11" width="2" height="2" />
+    <line x1="12" y1="2" x2="12" y2="4" />
+    <line x1="12" y1="20" x2="12" y2="22" />
+  </svg>
+);
+PongIcon.displayName = 'PongIcon';
+
+export const AsteroidsIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m21.5 10.5-5.5-5.5-5.5 5.5-5.5-5.5-2.5 2.5 5.5 5.5-5.5 5.5 2.5 2.5 5.5-5.5 5.5 5.5 5.5-5.5-5.5-5.5z"/>
+  </svg>
+);
+AsteroidsIcon.displayName = 'AsteroidsIcon';
+
+export const MemoryMatchIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
+    <path d="M9 9h6v6H9z" />
+    <path d="M12 12l4 4" />
+    <path d="M12 12l-4 4" />
+  </svg>
+);
+MemoryMatchIcon.displayName = 'MemoryMatchIcon';
+
+export const SimonSaysIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+    <path d="M2 12h10"/>
+    <path d="M12 2v10"/>
+  </svg>
+);
+SimonSaysIcon.displayName = 'SimonSaysIcon';
+
+export const WhacAMoleIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a9 9 0 1 1 18 0" />
+    <path d="M12 12v-2" />
+    <path d="M12 22a4 4 0 0 0-4-4h8a4 4 0 0 0-4 4z" />
+    <path d="M10 12a2 2 0 1 1 4 0" />
+  </svg>
+);
+WhacAMoleIcon.displayName = 'WhacAMoleIcon';
+
+export const SolitaireIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+    <path d="M7 7h4v4H7z" />
+    <path d="M13 7h4v4h-4z" />
+    <path d="M7 13h4v4H7z" />
+    <path d="M13 13h4v4h-4z" />
+  </svg>
+);
+SolitaireIcon.displayName = 'SolitaireIcon';
+
+export const HangmanIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2a10 10 0 1 0 10 10" />
+    <path d="M12 12m-4 0a4 4 0 1 0 8 0 4 4 0 1 0-8 0" />
+    <path d="M9 12h6" />
+    <path d="M12 9v6" />
+  </svg>
+);
+HangmanIcon.displayName = 'HangmanIcon';
+
+export const SpaceInvadersIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 4h8M9 8h6M10 12h4M11 16h2"/>
+    <path d="M5 20h14" />
+    <path d="M12 16v4" />
+  </svg>
+);
+SpaceInvadersIcon.displayName = 'SpaceInvadersIcon';
+
+export const DoodleJumpIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 16h16" />
+    <path d="M6 12h12" />
+    <path d="M8 8h8" />
+    <path d="M12 4v16" />
+  </svg>
+);
+DoodleJumpIcon.displayName = 'DoodleJumpIcon';

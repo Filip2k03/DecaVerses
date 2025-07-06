@@ -11,6 +11,16 @@ import { Battleship } from '@/components/games/Battleship';
 import { DynamicGameIcon } from '@/components/DynamicGameIcon';
 import { Minesweeper } from '@/components/games/Minesweeper';
 import { ClawMachine } from '@/components/games/ClawMachine';
+import { ConnectFour } from '@/components/games/ConnectFour';
+import { Pong } from '@/components/games/Pong';
+import { Asteroids } from '@/components/games/Asteroids';
+import { MemoryMatch } from '@/components/games/MemoryMatch';
+import { SimonSays } from '@/components/games/SimonSays';
+import { WhacAMole } from '@/components/games/WhacAMole';
+import { Solitaire } from '@/components/games/Solitaire';
+import { Hangman } from '@/components/games/Hangman';
+import { SpaceInvaders } from '@/components/games/SpaceInvaders';
+import { DoodleJump } from '@/components/games/DoodleJump';
 
 export default function GamePage({ params }: { params: { id: string } }) {
   const game = games.find((g) => g.id === parseInt(params.id, 10));
@@ -21,24 +31,25 @@ export default function GamePage({ params }: { params: { id: string } }) {
   
   const renderGame = () => {
     switch (game.id) {
-      case 1:
-        return <TicTacToe />;
-      case 2:
-        return <Snake />;
-      case 3:
-        return <Sudoku />;
-      case 4:
-        return <Game2048 />;
-      case 5:
-        return <Chess />;
-      case 6:
-        return <Battleship />;
-      case 7:
-        return <Minesweeper />;
-      case 8: // Block Stacker
-        return <BlockStacker />;
-      case 9:
-        return <ClawMachine />;
+      case 1: return <TicTacToe />;
+      case 2: return <Snake />;
+      case 3: return <Sudoku />;
+      case 4: return <Game2048 />;
+      case 5: return <Chess />;
+      case 6: return <Battleship />;
+      case 7: return <Minesweeper />;
+      case 8: return <BlockStacker />;
+      case 9: return <ClawMachine />;
+      case 10: return <ConnectFour />;
+      case 11: return <Pong />;
+      case 12: return <Asteroids />;
+      case 13: return <MemoryMatch />;
+      case 14: return <SimonSays />;
+      case 15: return <WhacAMole />;
+      case 16: return <Solitaire />;
+      case 17: return <Hangman />;
+      case 18: return <SpaceInvaders />;
+      case 19: return <DoodleJump />;
       default:
         return (
           <Card className="w-full max-w-md">
