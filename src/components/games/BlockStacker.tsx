@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Joystick } from '@/components/Joystick';
 import { useGame } from '@/context/GameContext';
-import { Trophy } from 'lucide-react';
+import { Trophy, Pause, Play, RefreshCw } from 'lucide-react';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
@@ -87,6 +87,15 @@ export function BlockStacker() {
     setGameOver(true);
     updateScore(8, score);
   }, [score, updateScore]);
+
+  const startGame = useCallback(() => {
+    setBoard(createEmptyBoard());
+    setCurrentPiece(randomTetromino());
+    setPosition({ x: Math.floor(BOARD_WIDTH / 2) - 2, y: 0 });
+    setScore(0);
+    setGameOver(false);
+    setIsPaused(false);
+  }, []);
 
   const dropPiece = useCallback(() => {
     if (isPaused || gameOver) return;
@@ -185,15 +194,6 @@ export function BlockStacker() {
         }
     };
 
-  const startGame = useCallback(() => {
-    setBoard(createEmptyBoard());
-    setCurrentPiece(randomTetromino());
-    setPosition({ x: Math.floor(BOARD_WIDTH / 2) - 2, y: 0 });
-    setScore(0);
-    setGameOver(false);
-    setIsPaused(false);
-  }, []);
-
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -225,8 +225,23 @@ export function BlockStacker() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row items-start gap-4">
-      <div className="border-4 border-primary rounded-lg p-1 bg-background shadow-[0_0_20px_hsl(var(--primary)/0.8)]">
+    <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
+      <div className="relative border-4 border-primary rounded-lg p-1 bg-background shadow-[0_0_20px_hsl(var(--primary)/0.8)]">
+        {(gameOver || isPaused) && (
+            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10 text-white gap-4">
+            {gameOver ? (
+                <>
+                    <h2 className="text-4xl font-bold font-headline">Game Over</h2>
+                    <Button onClick={startGame}>Play Again</Button>
+                </>
+            ) : (
+                <>
+                    <h2 className="text-4xl font-bold font-headline">Paused</h2>
+                    <Button onClick={() => handleControl('pause')}>Resume</Button>
+                </>
+            )}
+            </div>
+        )}
         <div
           className="grid gap-px"
           style={{
@@ -251,13 +266,7 @@ export function BlockStacker() {
         </div>
       </div>
       <div className="w-full md:w-64 space-y-4">
-        {gameOver && (
-          <div className="flex flex-col items-center p-4 bg-destructive/80 text-destructive-foreground rounded-lg">
-            <h2 className="text-2xl font-bold">Game Over</h2>
-            <p>Your score: {score}</p>
-          </div>
-        )}
-        <div className="p-4 bg-muted/80 rounded-lg text-center">
+         <div className="p-4 bg-muted/80 rounded-lg text-center">
           <h3 className="text-lg font-bold">Score</h3>
           <p className="text-2xl font-mono">{score}</p>
         </div>
@@ -268,12 +277,19 @@ export function BlockStacker() {
             </h3>
           <p className="text-2xl font-mono">{highScore}</p>
         </div>
-        <Button onClick={startGame} className="w-full">
-          {gameOver ? 'Play Again' : 'Restart'}
-        </Button>
-        <Button onClick={() => handleControl('pause')} className="w-full" variant="outline">
-          {isPaused ? 'Resume' : 'Pause'}
-        </Button>
+        {!gameOver && (
+             <div className="flex gap-2 justify-center">
+                <Button onClick={() => handleControl('pause')} variant="outline" className="w-full">
+                    {isPaused ? <Play /> : <Pause />}
+                    <span className="ml-2">{isPaused ? 'Resume' : 'Pause'}</span>
+                </Button>
+                 <Button onClick={startGame} variant="destructive" className="w-full">
+                    <RefreshCw />
+                    <span className="ml-2">Restart</span>
+                </Button>
+            </div>
+        )}
+        {gameOver && <Button onClick={startGame} className="w-full">Play Again</Button>}
         <div className="text-sm text-muted-foreground p-2 text-center border rounded-lg">
           <p><strong>Controls:</strong></p>
           <p>Arrow Keys to move</p>
@@ -284,4 +300,4 @@ export function BlockStacker() {
       {isMobile && !gameOver && !isPaused && <Joystick onMove={handleJoystickMove} />}
     </div>
   );
-};
+}

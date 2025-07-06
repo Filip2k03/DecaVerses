@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Joystick } from '@/components/Joystick';
 import { useGame } from '@/context/GameContext';
-import { Trophy } from 'lucide-react';
+import { Trophy, Pause, Play, RefreshCw } from 'lucide-react';
 
 const BOARD_SIZE = 20;
 const CELL_SIZE = 20; // in pixels
@@ -22,6 +22,7 @@ const Snake = () => {
   const [direction, setDirection] = useState({ x: 0, y: -1 }); // Start moving up
   const [speed, setSpeed] = useState<number | null>(200);
   const [gameOver, setGameOver] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [score, setScore] = useState(0);
   const isMobile = useIsMobile();
   const { scores, updateScore } = useGame();
@@ -39,10 +40,18 @@ const Snake = () => {
     setDirection({ x: 0, y: -1 });
     setSpeed(200);
     setGameOver(false);
+    setIsPaused(false);
     setScore(0);
   }, []);
 
+  const togglePause = () => {
+      if (!gameOver) {
+          setIsPaused(p => !p);
+      }
+  }
+
   const changeDirection = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
+    if(isPaused) return;
     switch (dir) {
       case 'up':
         if (direction.y === 0) setDirection({ x: 0, y: -1 });
@@ -57,16 +66,21 @@ const Snake = () => {
         if (direction.x === 0) setDirection({ x: 1, y: 0 });
         break;
     }
-  }, [direction]);
+  }, [direction, isPaused]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    e.preventDefault();
+    if (e.key === 'p' || e.key === 'P') {
+        togglePause();
+        return;
+    }
     switch (e.key) {
       case 'ArrowUp': changeDirection('up'); break;
       case 'ArrowDown': changeDirection('down'); break;
       case 'ArrowLeft': changeDirection('left'); break;
       case 'ArrowRight': changeDirection('right'); break;
     }
-  }, [changeDirection]);
+  }, [changeDirection, togglePause]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -81,6 +95,7 @@ const Snake = () => {
   }
 
   const gameLoop = useCallback(() => {
+    if (isPaused) return;
     const newSnake = [...snake];
     const head = { ...newSnake[0] };
     head.x += direction.x;
@@ -112,19 +127,19 @@ const Snake = () => {
     }
     
     setSnake(newSnake);
-  }, [snake, direction, food, speed, handleGameOver]);
+  }, [snake, direction, food, speed, handleGameOver, isPaused]);
 
   useEffect(() => {
-    if (gameOver) return;
+    if (gameOver || isPaused) return;
     const interval = setInterval(gameLoop, speed);
     return () => clearInterval(interval);
-  }, [gameLoop, speed, gameOver]);
+  }, [gameLoop, speed, gameOver, isPaused]);
 
 
   return (
     <div className="flex flex-col items-center gap-4">
       <Card className="bg-transparent border-none shadow-none">
-        <CardContent className="p-2">
+        <CardContent className="p-2 relative">
             <div
                 className="relative bg-muted/20"
                 style={{
@@ -134,6 +149,21 @@ const Snake = () => {
                     boxShadow: 'inset 0 0 15px hsl(var(--primary)/0.5), 0 0 15px hsl(var(--primary)/0.5)',
                 }}
             >
+                {(gameOver || isPaused) && (
+                     <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10 text-white gap-4">
+                        {gameOver ? (
+                            <>
+                                <h2 className="text-4xl font-bold font-headline">Game Over</h2>
+                                <Button onClick={resetGame}>Play Again</Button>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-4xl font-bold font-headline">Paused</h2>
+                                <Button onClick={togglePause}>Resume</Button>
+                            </>
+                        )}
+                    </div>
+                )}
                 {/* Grid pattern */}
                 <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(hsl(var(--primary)/0.1) 1px, transparent 1px), linear-gradient(to right, hsl(var(--primary)/0.1) 1px, transparent 1px)', backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px` }} />
 
@@ -171,23 +201,28 @@ const Snake = () => {
             </div>
         </CardContent>
       </Card>
-      <div className="text-center">
+      <div className="text-center w-full max-w-sm">
         <div className='flex gap-4 mb-4 justify-center'>
-            <div className='p-2 rounded-md bg-muted'>
+            <div className='p-2 rounded-md bg-muted flex-1'>
                 <p className="text-sm text-muted-foreground">Score</p>
                 <p className="text-2xl font-bold">{score}</p>
             </div>
-            <div className='p-2 rounded-md bg-muted'>
-                <p className="text-sm text-muted-foreground flex items-center gap-1"><Trophy className='h-4 w-4 text-yellow-500' /> High Score</p>
+            <div className='p-2 rounded-md bg-muted flex-1'>
+                <p className="text-sm text-muted-foreground flex items-center justify-center gap-1"><Trophy className='h-4 w-4 text-yellow-500' /> High Score</p>
                 <p className="text-2xl font-bold">{highScore}</p>
             </div>
         </div>
-
-        {gameOver && (
-          <div className="mt-4">
-            <p className="text-2xl font-bold text-destructive">Game Over!</p>
-            <Button onClick={resetGame} className="mt-2">Play Again</Button>
-          </div>
+        {!gameOver && (
+            <div className="flex gap-2 justify-center">
+                <Button onClick={togglePause} variant="outline">
+                    {isPaused ? <Play /> : <Pause />}
+                    <span className="ml-2">{isPaused ? 'Resume' : 'Pause'}</span>
+                </Button>
+                 <Button onClick={resetGame} variant="destructive">
+                    <RefreshCw />
+                    <span className="ml-2">Restart</span>
+                </Button>
+            </div>
         )}
       </div>
       {isMobile && !gameOver && <Joystick onMove={handleJoystickMove} />}
