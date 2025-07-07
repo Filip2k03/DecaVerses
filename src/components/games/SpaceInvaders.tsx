@@ -33,6 +33,7 @@ export const SpaceInvaders = () => {
   const [invaderBullets, setInvaderBullets] = useState<Bullet[]>([]);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
+  const [level, setLevel] = useState(1);
   const [gameOver, setGameOver] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   
@@ -64,6 +65,7 @@ export const SpaceInvaders = () => {
     setInvaderBullets([]);
     setScore(0);
     setLives(3);
+    setLevel(1);
     setGameOver(false);
     setIsPaused(false);
     setInvaderDirection('right');
@@ -79,13 +81,15 @@ export const SpaceInvaders = () => {
   
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     if (e.key === ' ' && !gameOver && !isPaused) {
-      setPlayerBullets(b => [...b, { x: playerX + PLAYER_WIDTH / 2 - 2, y: GAME_HEIGHT - PLAYER_HEIGHT }]);
+      if (playerBullets.length < 3) {
+        setPlayerBullets(b => [...b, { x: playerX + PLAYER_WIDTH / 2 - 2, y: GAME_HEIGHT - PLAYER_HEIGHT }]);
+      }
     }
     if (e.key.toLowerCase() === 'p') {
       togglePause();
     }
     delete keysPressed[e.key];
-  }, [keysPressed, gameOver, isPaused, playerX, togglePause]);
+  }, [keysPressed, gameOver, isPaused, playerX, togglePause, playerBullets.length]);
   
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -100,7 +104,9 @@ export const SpaceInvaders = () => {
       if(gameOver || isPaused) return;
       if (dir === 'left') setPlayerX(x => Math.max(0, x - 10));
       if (dir === 'right') setPlayerX(x => Math.min(GAME_WIDTH - PLAYER_WIDTH, x + 10));
-      if (dir === 'up') setPlayerBullets(b => [...b, { x: playerX + PLAYER_WIDTH / 2 - 2, y: GAME_HEIGHT - PLAYER_HEIGHT }]);
+      if (dir === 'up' && playerBullets.length < 3) {
+        setPlayerBullets(b => [...b, { x: playerX + PLAYER_WIDTH / 2 - 2, y: GAME_HEIGHT - PLAYER_HEIGHT }]);
+      }
   }
 
   const gameLoop = useCallback(() => {
@@ -111,10 +117,12 @@ export const SpaceInvaders = () => {
     if (keysPressed['ArrowRight']) setPlayerX(x => Math.min(GAME_WIDTH - PLAYER_WIDTH, x + 5));
 
     // Bullet movement
+    const invaderBulletSpeed = 4 + level * 0.5;
     setPlayerBullets(b => b.map(bullet => ({ ...bullet, y: bullet.y - 10 })).filter(b => b.y > 0));
-    setInvaderBullets(b => b.map(bullet => ({ ...bullet, y: bullet.y + 5 })).filter(b => b.y < GAME_HEIGHT));
+    setInvaderBullets(b => b.map(bullet => ({ ...bullet, y: bullet.y + invaderBulletSpeed })).filter(b => b.y < GAME_HEIGHT));
 
     // Invader movement
+    const invaderMoveSpeed = 0.5 + level * 0.5;
     let wallWasHit = false;
     const aliveInvaders = invaders.filter(i => i.alive);
     if (aliveInvaders.length > 0) {
@@ -131,57 +139,64 @@ export const SpaceInvaders = () => {
         setInvaderDirection(newDirection);
         setInvaders(invs => invs.map(inv => ({ ...inv, y: inv.y + 10 })));
     } else {
-        setInvaders(invs => invs.map(inv => ({ ...inv, x: inv.x + (invaderDirection === 'right' ? 1 : -1) })));
+        setInvaders(invs => invs.map(inv => ({ ...inv, x: inv.x + (invaderDirection === 'right' ? invaderMoveSpeed : -invaderMoveSpeed) })));
     }
     
     // Invader shooting
-    if (Math.random() < 0.02) {
-        const currentAliveInvaders = invaders.filter(i => i.alive);
-        if (currentAliveInvaders.length > 0) {
-            const randomInvader = currentAliveInvaders[Math.floor(Math.random() * currentAliveInvaders.length)];
-            setInvaderBullets(b => [...b, {x: randomInvader.x + INVADER_SIZE/2, y: randomInvader.y + INVADER_SIZE}]);
-        }
+    const firingRate = 0.015 + level * 0.005;
+    if (Math.random() < firingRate && aliveInvaders.length > 0) {
+        const randomInvader = aliveInvaders[Math.floor(Math.random() * aliveInvaders.length)];
+        setInvaderBullets(b => [...b, {x: randomInvader.x + INVADER_SIZE/2, y: randomInvader.y + INVADER_SIZE}]);
     }
 
     // Collision detection
     // Player bullets with invaders
     setPlayerBullets(currentBullets => {
-        const bulletsToRemove: number[] = [];
+        const bulletsToRemove = new Set<number>();
         setInvaders(currentInvaders => {
             const newInvaders = [...currentInvaders];
             currentBullets.forEach((bullet, bIndex) => {
                 newInvaders.forEach((invader, iIndex) => {
                     if (invader.alive && bullet.x > invader.x && bullet.x < invader.x + INVADER_SIZE && bullet.y > invader.y && bullet.y < invader.y + INVADER_SIZE) {
                         newInvaders[iIndex].alive = false;
-                        bulletsToRemove.push(bIndex);
-                        setScore(s => s + 100);
+                        bulletsToRemove.add(bIndex);
+                        setScore(s => s + (100 * level));
                     }
                 });
             });
             return newInvaders;
         });
-        return currentBullets.filter((_, index) => !bulletsToRemove.includes(index));
+        return currentBullets.filter((_, index) => !bulletsToRemove.has(index));
     });
     
     // Invader bullets with player
-    invaderBullets.forEach(bullet => {
-        if (bullet.x > playerX && bullet.x < playerX + PLAYER_WIDTH && bullet.y > GAME_HEIGHT - PLAYER_HEIGHT) {
-            setLives(l => l - 1);
-            setInvaderBullets([]);
-        }
+    let playerWasHit = false;
+    setInvaderBullets(currentBullets => {
+        return currentBullets.filter(bullet => {
+            if (bullet.x > playerX && bullet.x < playerX + PLAYER_WIDTH && bullet.y > GAME_HEIGHT - PLAYER_HEIGHT && bullet.y < GAME_HEIGHT) {
+                playerWasHit = true;
+                return false; // remove bullet
+            }
+            return true;
+        });
     });
 
-    if (lives <= 0 || invaders.some(inv => inv.alive && inv.y > GAME_HEIGHT - PLAYER_HEIGHT - 20)) {
+    if (playerWasHit) {
+      setLives(l => l - 1);
+    }
+
+    if ((lives <= 1 && playerWasHit) || invaders.some(inv => inv.alive && inv.y > GAME_HEIGHT - PLAYER_HEIGHT - 20)) {
         setGameOver(true);
         updateScore(18, score);
     }
     
-    if (invaders.every(inv => !inv.alive)) {
+    if (invaders.length > 0 && invaders.every(inv => !inv.alive)) {
+        setLevel(l => l + 1);
         createInvaders();
     }
 
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameOver, isPaused, keysPressed, invaderDirection, invaders, createInvaders, invaderBullets, playerX, lives, updateScore, score]);
+  }, [gameOver, isPaused, keysPressed, invaderDirection, invaders, createInvaders, playerX, lives, updateScore, score, level]);
   
   useEffect(() => {
     if (gameOver || isPaused) return;
@@ -193,6 +208,7 @@ export const SpaceInvaders = () => {
     <div className="flex flex-col items-center gap-4">
       <div className="flex justify-between w-full max-w-xl text-lg font-headline">
         <div>Score: {score}</div>
+        <div>Level: {level}</div>
         <div className='flex items-center gap-2'><Trophy className='h-5 w-5 text-yellow-500' /> Best: {highScore}</div>
         <div>Lives: {lives}</div>
       </div>
