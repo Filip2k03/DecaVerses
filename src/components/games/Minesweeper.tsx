@@ -72,6 +72,7 @@ const Minesweeper = () => {
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
   const [time, setTime] = useState(0);
   const [flags, setFlags] = useState(DIFFICULTY_SETTINGS.easy.mines);
+  const [clickMode, setClickMode] = useState<'reveal' | 'flag'>('reveal');
   const { scores, updateScore } = useGame();
   const highScore = scores[7] || 0;
 
@@ -83,6 +84,7 @@ const Minesweeper = () => {
     setTime(0);
     setFlags(mines);
     setDifficulty(newDifficulty);
+    setClickMode('reveal');
   }, []);
 
   useEffect(() => {
@@ -138,9 +140,8 @@ const Minesweeper = () => {
     setBoard(newBoard);
     checkWinCondition(newBoard);
   };
-
-  const toggleFlag = (e: React.MouseEvent, row: number, col: number) => {
-    e.preventDefault();
+  
+  const handleToggleFlag = (row: number, col: number) => {
     if (gameState !== 'playing' || board[row][col].isRevealed) return;
 
     const newBoard = JSON.parse(JSON.stringify(board));
@@ -154,6 +155,20 @@ const Minesweeper = () => {
       setFlags(f => f - 1);
     }
     setBoard(newBoard);
+  };
+
+  const handleCellClick = (row: number, col: number) => {
+    if (gameState !== 'playing') return;
+    if (clickMode === 'reveal') {
+      revealCell(row, col);
+    } else {
+      handleToggleFlag(row, col);
+    }
+  };
+  
+  const handleContextMenu = (e: React.MouseEvent, row: number, col: number) => {
+    e.preventDefault();
+    handleToggleFlag(row, col);
   };
 
   const handleDifficultyChange = (newDifficulty: Difficulty) => {
@@ -170,21 +185,21 @@ const Minesweeper = () => {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <Card className="w-full max-w-fit">
+      <Card className="w-full">
         <CardContent className="p-4 flex flex-col items-center gap-4">
           <div className="flex justify-between w-full">
-            <div className="flex items-center gap-2 p-2 bg-muted rounded-md font-mono text-lg">
+            <div className="flex items-center gap-1 sm:gap-2 p-2 bg-muted rounded-md font-mono text-base sm:text-lg">
               <Bomb className="h-5 w-5 text-destructive" /> {DIFFICULTY_SETTINGS[difficulty].mines.toString().padStart(3, '0')}
             </div>
-             <div className="flex items-center gap-2 p-2 bg-muted rounded-md font-mono text-lg">
+             <div className="flex items-center gap-1 sm:gap-2 p-2 bg-muted rounded-md font-mono text-base sm:text-lg">
                 <Flag className="h-5 w-5 text-primary" /> {flags.toString().padStart(3, '0')}
             </div>
-            <div className="flex items-center gap-2 p-2 bg-muted rounded-md font-mono text-lg">
+            <div className="flex items-center gap-1 sm:gap-2 p-2 bg-muted rounded-md font-mono text-base sm:text-lg">
                 <Timer className="h-5 w-5" /> {time.toString().padStart(3, '0')}
             </div>
           </div>
           
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-center gap-2 flex-wrap">
             {(Object.keys(DIFFICULTY_SETTINGS) as Difficulty[]).map(d => (
               <Button
                 key={d}
@@ -197,6 +212,15 @@ const Minesweeper = () => {
             ))}
           </div>
 
+           <Button
+              variant={clickMode === 'flag' ? 'default' : 'outline'}
+              onClick={() => setClickMode(m => m === 'reveal' ? 'flag' : 'reveal')}
+              className="w-48"
+          >
+              {clickMode === 'reveal' ? <Bomb className="mr-2 h-5 w-5" /> : <Flag className="mr-2 h-5 w-5" />}
+              Mode: {clickMode === 'reveal' ? 'Reveal' : 'Flag'}
+          </Button>
+
           <div className="overflow-auto max-w-full">
             <div
               className="grid gap-px bg-primary/20 border border-primary rounded-md overflow-hidden"
@@ -206,8 +230,8 @@ const Minesweeper = () => {
                 row.map((cell, c) => (
                   <button
                     key={`${r}-${c}`}
-                    onClick={() => revealCell(r, c)}
-                    onContextMenu={(e) => toggleFlag(e, r, c)}
+                    onClick={() => handleCellClick(r, c)}
+                    onContextMenu={(e) => handleContextMenu(e, r, c)}
                     disabled={gameState !== 'playing'}
                     className={cn(
                       'flex items-center justify-center font-bold text-lg transition-colors',
@@ -247,5 +271,3 @@ const Minesweeper = () => {
 };
 
 export { Minesweeper };
-
-    
