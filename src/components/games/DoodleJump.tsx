@@ -15,15 +15,39 @@ const PLATFORM_WIDTH = 80;
 const PLATFORM_HEIGHT = 15;
 const GRAVITY = 0.5;
 const JUMP_VELOCITY = -12;
+const HORIZONTAL_SPEED = 5;
 
 type Platform = { x: number; y: number; };
+type PlayerState = {
+  x: number;
+  y: number;
+  vy: number;
+  vx: number;
+  dir: 'left' | 'right';
+};
+
+const Doodler = ({ dir }: { dir: 'left' | 'right' }) => (
+    <svg width="100%" height="100%" viewBox="0 0 50 50" style={{ transform: dir === 'left' ? 'scaleX(-1)' : 'none' }}>
+        <g stroke="#000" strokeWidth="1">
+            <path d="M10 50 C 10 25, 40 25, 40 50 Z" fill="#96E072" />
+            <path d="M18 40 C 18 35, 32 35, 32 40 Z" fill="#78B456" />
+            <circle cx="18" cy="25" r="5" fill="white" />
+            <circle cx="32" cy="25" r="5" fill="white" />
+            <circle cx="19" cy="25" r="2" fill="black" />
+            <circle cx="33" cy="25" r="2" fill="black" />
+            <path d="M22 15 L28 15 L25 5 Z" fill="#96E072" />
+        </g>
+    </svg>
+);
+
 
 export const DoodleJump = () => {
-  const [player, setPlayer] = useState({ x: GAME_WIDTH / 2, y: GAME_HEIGHT - 50, vy: 0, vx: 0 });
+  const [player, setPlayer] = useState<PlayerState>({ x: GAME_WIDTH / 2, y: GAME_HEIGHT - 50, vy: 0, vx: 0, dir: 'right' });
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [score, setScore] = useState(0);
   const [cameraY, setCameraY] = useState(0);
   const [gameOver, setGameOver] = useState(true);
+  const [isFalling, setIsFalling] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
   const keysPressed = useRef<{ [key: string]: boolean }>({}).current;
@@ -35,25 +59,37 @@ export const DoodleJump = () => {
 
   const resetGame = useCallback(() => {
     const initialPlatforms: Platform[] = [];
+    let lastY = GAME_HEIGHT;
     for (let i = 0; i < 10; i++) {
+        lastY -= (Math.random() * 60 + 60);
         initialPlatforms.push({
             x: Math.random() * (GAME_WIDTH - PLATFORM_WIDTH),
-            y: GAME_HEIGHT - 70 * i,
+            y: lastY,
         });
     }
     setPlatforms(initialPlatforms);
-    setPlayer({ x: GAME_WIDTH / 2, y: GAME_HEIGHT - 50, vy: 0, vx: 0 });
+    setPlayer({ x: initialPlatforms[0].x + PLATFORM_WIDTH / 2 - PLAYER_WIDTH / 2, y: initialPlatforms[0].y - PLAYER_HEIGHT, vy: 0, vx: 0, dir: 'right' });
     setScore(0);
     setCameraY(0);
-    setGameOver(false);
+    setGameOver(true); // Will be set to false by start button
+    setIsFalling(false);
     setIsPaused(false);
   }, []);
 
+  useEffect(() => {
+    resetGame();
+  }, [resetGame]);
+
+  const startGame = () => {
+    resetGame();
+    setGameOver(false);
+    setPlayer(p => ({...p, vy: JUMP_VELOCITY }));
+  }
+
   const togglePause = useCallback(() => {
-    if (!gameOver) {
-      setIsPaused(p => !p);
-    }
-  }, [gameOver]);
+    if (gameOver || isFalling) return;
+    setIsPaused(p => !p);
+  }, [gameOver, isFalling]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => { 
     if (e.key.toLowerCase() === 'p') {
@@ -74,34 +110,40 @@ export const DoodleJump = () => {
   }, [handleKeyDown, handleKeyUp]);
   
   const handleJoystickMove = (dir: 'left' | 'right' | 'center' | 'up' | 'down') => {
-      if(gameOver || isPaused) return;
-      if(dir === 'left') setPlayer(p => ({...p, vx: -5}));
-      else if(dir === 'right') setPlayer(p => ({...p, vx: 5}));
+      if(gameOver || isPaused || isFalling) return;
+      if(dir === 'left') setPlayer(p => ({...p, vx: -HORIZONTAL_SPEED}));
+      else if(dir === 'right') setPlayer(p => ({...p, vx: HORIZONTAL_SPEED}));
       else setPlayer(p => ({...p, vx: 0}));
   }
 
   const gameLoop = useCallback(() => {
     if (gameOver || isPaused) return;
     
-    let newVx = 0;
-    if (keysPressed['ArrowLeft']) newVx = -5;
-    if (keysPressed['ArrowRight']) newVx = 5;
-
     setPlayer(p => {
+        let newVx = isMobile ? p.vx : 0;
+        if (!isMobile) {
+            if (keysPressed['ArrowLeft']) newVx = -HORIZONTAL_SPEED;
+            if (keysPressed['ArrowRight']) newVx = HORIZONTAL_SPEED;
+        }
+
+        let newDir = p.dir;
+        if (newVx < 0) newDir = 'left';
+        if (newVx > 0) newDir = 'right';
+
         let newVy = p.vy + GRAVITY;
         let newY = p.y + newVy;
-        let newX = (p.x + (isMobile ? p.vx : newVx) + GAME_WIDTH) % GAME_WIDTH;
+        let newX = (p.x + newVx + GAME_WIDTH) % GAME_WIDTH;
 
         // Platform collision
-        if (p.vy > 0) {
+        if (!isFalling && p.vy > 0) {
             platforms.forEach(plat => {
-                if (newX < plat.x + PLATFORM_WIDTH && newX + PLAYER_WIDTH > plat.x && p.y < plat.y + PLATFORM_HEIGHT && newY >= plat.y) {
+                if (newX + PLAYER_WIDTH > plat.x && newX < plat.x + PLATFORM_WIDTH && p.y + PLAYER_HEIGHT > plat.y && newY + PLAYER_HEIGHT <= plat.y + PLATFORM_HEIGHT) {
                     newVy = JUMP_VELOCITY;
                 }
             });
         }
         
-        return { ...p, y: newY, vy: newVy, x: newX, vx: isMobile ? p.vx : 0 };
+        return { ...p, y: newY, vy: newVy, x: newX, vx: newVx, dir: newDir };
     });
 
     // Camera movement
@@ -110,28 +152,42 @@ export const DoodleJump = () => {
     }
     
     // Update score
-    const newScore = Math.max(score, Math.floor(-cameraY));
-    setScore(newScore);
-
+    if(!isFalling) {
+        const newScore = Math.max(score, Math.floor(-cameraY));
+        setScore(newScore);
+    }
+    
     // Generate new platforms
-    if (platforms.length > 0 && platforms[platforms.length - 1].y > cameraY) {
-        setPlatforms(p => [...p, {
-            x: Math.random() * (GAME_WIDTH - PLATFORM_WIDTH),
-            y: p[p.length - 1].y - (Math.random() * 60 + 60),
-        }].filter(plat => plat.y < cameraY + GAME_HEIGHT + 50));
+    if (platforms.length > 0) {
+        const highestPlatform = platforms[platforms.length - 1];
+        if (highestPlatform.y > cameraY - PLATFORM_HEIGHT) {
+            setPlatforms(p => [...p, {
+                x: Math.random() * (GAME_WIDTH - PLATFORM_WIDTH),
+                y: highestPlatform.y - (Math.random() * 60 + 60),
+            }].filter(plat => plat.y < cameraY + GAME_HEIGHT + 50));
+        }
     }
     
     // Game Over condition
-    if (player.y > cameraY + GAME_HEIGHT) {
-        setGameOver(true);
+    if (!isFalling && player.y > cameraY + GAME_HEIGHT) {
+        setIsFalling(true);
         updateScore(19, score);
     }
     
+    // After falling off screen
+    if(isFalling && player.y > cameraY + GAME_HEIGHT + 200) {
+        setGameOver(true);
+        setIsFalling(false);
+    }
+    
     gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameOver, isPaused, keysPressed, platforms, player, cameraY, isMobile, score, updateScore]);
+  }, [gameOver, isPaused, isFalling, isMobile, keysPressed, platforms, player, cameraY, score, updateScore]);
 
   useEffect(() => {
-    if(gameOver || isPaused) return;
+    if(gameOver || isPaused) {
+        if(gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+        return;
+    };
     gameLoopRef.current = requestAnimationFrame(gameLoop);
     return () => { if(gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); };
   }, [gameOver, isPaused, gameLoop]);
@@ -142,36 +198,49 @@ export const DoodleJump = () => {
         <div>Score: {score}</div>
         <div className='flex items-center gap-2'><Trophy className='h-5 w-5 text-yellow-500' /> Best: {highScore}</div>
       </div>
-      <div className="relative bg-black border-2 border-primary/50 overflow-hidden" style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}>
-        {gameOver && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 text-white">
-                <h2 className="text-4xl font-bold font-headline">Game Over</h2>
-                <Button onClick={resetGame} className="mt-4" variant="outline">Play Again</Button>
+      <div className="relative border-2 border-primary/50 overflow-hidden" 
+           style={{ 
+               width: GAME_WIDTH, 
+               height: GAME_HEIGHT,
+               backgroundColor: '#f0f8ff',
+               backgroundImage: 'linear-gradient(rgba(0,191,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0,191,255,0.2) 1px, transparent 1px)',
+               backgroundSize: '20px 20px',
+            }}
+      >
+        {gameOver && !isFalling && (
+            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-20 text-white">
+                <h2 className="text-4xl font-bold font-headline">{score > 0 ? 'Game Over' : 'Doodle Jump'}</h2>
+                <Button onClick={startGame} className="mt-4" variant="outline">
+                    {score > 0 ? 'Play Again' : 'Start Game'}
+                </Button>
             </div>
         )}
-         {isPaused && !gameOver && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 text-white">
+         {isPaused && (
+            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-20 text-white">
                 <h2 className="text-4xl font-bold font-headline">Paused</h2>
                 <Button onClick={togglePause} className="mt-4" variant="outline">Resume</Button>
             </div>
         )}
-        <div className="absolute w-full h-full" style={{ transform: `translateY(${-cameraY}px)` }}>
+        <div className="absolute w-full h-full transition-transform duration-100 ease-linear" style={{ transform: `translateY(${-cameraY}px)` }}>
             {/* Player */}
-            <div className="absolute bg-cyan-400" style={{ left: player.x, top: player.y, width: PLAYER_WIDTH, height: PLAYER_HEIGHT }}/>
+            <div className="absolute" style={{ left: player.x, top: player.y, width: PLAYER_WIDTH, height: PLAYER_HEIGHT }}>
+                <Doodler dir={player.dir} />
+            </div>
+
             {/* Platforms */}
             {platforms.map((p, i) => (
-                <div key={i} className="absolute bg-green-500" style={{ left: p.x, top: p.y, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT }}/>
+                <div key={i} className="absolute bg-green-500 rounded-md border-b-4 border-green-700" style={{ left: p.x, top: p.y, width: PLATFORM_WIDTH, height: PLATFORM_HEIGHT }}/>
             ))}
         </div>
       </div>
       <div className="w-full flex flex-col items-center gap-2">
-        {!gameOver && (
+        {!gameOver && !isFalling && (
           <div className="flex gap-2 justify-center">
-            <Button onClick={togglePause} variant="outline" disabled={gameOver}>
+            <Button onClick={togglePause} variant="outline" disabled={gameOver || isFalling}>
                 {isPaused ? <Play /> : <Pause />}
                 <span className="ml-2">{isPaused ? 'Resume' : 'Pause'}</span>
             </Button>
-            <Button onClick={resetGame} variant="destructive">
+            <Button onClick={startGame} variant="destructive">
                 <RefreshCw />
                 <span className="ml-2">Restart</span>
             </Button>
