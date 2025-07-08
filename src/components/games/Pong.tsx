@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Pause, Play, RefreshCw } from 'lucide-react';
+import { Pause, Play, RefreshCw, Smartphone } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PADDLE_HEIGHT = 80;
 const PADDLE_WIDTH = 10;
@@ -21,6 +22,25 @@ export const Pong = () => {
   const [isPaused, setIsPaused] = useState(false);
   const gameLoopRef = useRef<number>();
   const gameAreaRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const [isPortrait, setIsPortrait] = useState(false);
+
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const portrait = window.matchMedia("(orientation: portrait)");
+
+    const handleChange = (e: MediaQueryListEvent) => {
+        setIsPortrait(e.matches);
+    };
+
+    setIsPortrait(portrait.matches);
+    portrait.addEventListener("change", handleChange);
+
+    return () => {
+        portrait.removeEventListener("change", handleChange);
+    };
+  }, [isMobile]);
 
   const resetBall = useCallback((keepVelocity = false) => {
     setBall({ x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 });
@@ -137,6 +157,16 @@ export const Pong = () => {
       if(gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
   }, [gameLoop, isPaused, gameOver]);
+
+  if (isMobile && isPortrait) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-8 rounded-lg bg-card border-2 border-primary/30 shadow-[0_0_20px_hsl(var(--primary)/0.5)] w-full max-w-md h-64">
+        <Smartphone className="h-16 w-16 mb-4 text-primary animate-pulse" />
+        <h3 className="text-2xl font-bold font-headline">Please Rotate Your Phone</h3>
+        <p className="text-muted-foreground mt-2">Pong is best played in landscape mode.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-4">
