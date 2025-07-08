@@ -22,6 +22,6 @@ export function BackgroundMusic() {
   }, [isMusicEnabled]);
 
   return (
-    <audio ref={audioRef} src="/background-music.mp3" loop preload="auto" />
+    <audio ref={audioRef} src="https://audio-previews.elements.envatousercontent.com/files/485965201/preview.mp3" loop preload="auto" />
   );
 }
