@@ -21,6 +21,9 @@ import { Solitaire } from '@/components/games/Solitaire';
 import { Hangman } from '@/components/games/Hangman';
 import { SpaceInvaders } from '@/components/games/SpaceInvaders';
 import { DoodleJump } from '@/components/games/DoodleJump';
+import { QuantumBreakout } from '@/components/games/QuantumBreakout';
+import { TowerDefense } from '@/components/games/TowerDefense';
+import { LogicGates } from '@/components/games/LogicGates';
 
 export default function GamePage({ params }: { params: { id: string } }) {
   const game = games.find((g) => g.id === parseInt(params.id, 10));
@@ -50,6 +53,9 @@ export default function GamePage({ params }: { params: { id: string } }) {
       case 17: return <Hangman />;
       case 18: return <SpaceInvaders />;
       case 19: return <DoodleJump />;
+      case 20: return <QuantumBreakout />;
+      case 21: return <TowerDefense />;
+      case 22: return <LogicGates />;
       default:
         return (
           <Card className="w-full max-w-md">

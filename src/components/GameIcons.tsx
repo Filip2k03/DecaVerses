@@ -152,3 +152,35 @@ export const DoodleJumpIcon: FC<LucideProps> = (props) => (
   </svg>
 );
 DoodleJumpIcon.displayName = 'DoodleJumpIcon';
+
+export const QuantumBreakoutIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="20" width="20" height="2" rx="1" />
+    <circle cx="12" cy="12" r="1.5" />
+    <rect x="4" y="2" width="4" height="3" />
+    <rect x="10" y="2" width="4" height="3" />
+    <rect x="16" y="2" width="4" height="3" />
+    <rect x="7" y="6" width="4" height="3" />
+    <rect x="13" y="6" width="4" height="3" />
+  </svg>
+);
+QuantumBreakoutIcon.displayName = 'QuantumBreakoutIcon';
+
+export const TowerDefenseIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 4H6v4l6 6 6-6V4z" />
+    <path d="M12 14v8" />
+    <path d="M8 22h8" />
+  </svg>
+);
+TowerDefenseIcon.displayName = 'TowerDefenseIcon';
+
+export const LogicGatesIcon: FC<LucideProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 9h4" />
+    <path d="M2 15h4" />
+    <path d="M18 12h4" />
+    <path d="M6 9c4 0 8 6 8 6s-4 6-8 6V9z" />
+  </svg>
+);
+LogicGatesIcon.displayName = 'LogicGatesIcon';

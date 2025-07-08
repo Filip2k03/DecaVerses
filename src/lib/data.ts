@@ -26,4 +26,7 @@ export const games: Game[] = [
   { id: 17, title: 'Hangman', description: 'Guess the word before the time runs out!', category: 'Puzzle', icon: 'HangmanIcon' },
   { id: 18, title: 'Space Invaders', description: 'Defend the earth from waves of alien invaders.', category: 'Arcade', icon: 'SpaceInvadersIcon' },
   { id: 19, title: 'Doodle Jump', description: 'An endless platformer. How high can you get?', category: 'Arcade', icon: 'DoodleJumpIcon' },
+  { id: 20, title: 'Quantum Breakout', description: 'Bounce a quantum particle to destroy data blocks.', category: 'Arcade', icon: 'QuantumBreakoutIcon'},
+  { id: 21, title: 'Tower Defense 2077', description: 'Defend your server from waves of malicious data packets.', category: 'Strategy', icon: 'TowerDefenseIcon'},
+  { id: 22, title: 'Logic Gates', description: 'Solve puzzles by wiring up digital logic gates.', category: 'Puzzle', icon: 'LogicGatesIcon'},
 ];

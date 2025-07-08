@@ -13,7 +13,7 @@ interface GameCardProps {
   game: Game;
 }
 
-const SCORED_GAME_IDS = [2, 4, 6, 7, 8, 9, 12, 13, 14, 15, 18, 19];
+const SCORED_GAME_IDS = [2, 4, 6, 7, 8, 9, 12, 13, 14, 15, 18, 19, 20, 21];
 
 export function GameCard({ game }: GameCardProps) {
   const { scores } = useGame();

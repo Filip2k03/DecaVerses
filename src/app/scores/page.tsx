@@ -6,7 +6,7 @@ import { Trophy } from 'lucide-react';
 import { DynamicGameIcon } from '@/components/DynamicGameIcon';
 import { useGame } from '@/context/GameContext';
 
-const SCORED_GAME_IDS = [2, 4, 6, 7, 8, 9, 12, 13, 14, 15, 18, 19];
+const SCORED_GAME_IDS = [2, 4, 6, 7, 8, 9, 12, 13, 14, 15, 18, 19, 20, 21];
 
 export default function ScoresPage() {
   const { scores } = useGame();
