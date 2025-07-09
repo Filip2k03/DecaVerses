@@ -4,10 +4,19 @@ import { useSettings } from '@/context/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Music4 } from 'lucide-react';
+import { Music4, Paintbrush } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function SettingsPage() {
-  const { isMusicEnabled, toggleMusic } = useSettings();
+  const { isMusicEnabled, toggleMusic, theme, setTheme } = useSettings();
+
+  const themes = [
+    { value: 'dark', label: 'Dark' },
+    { value: 'light', label: 'Light' },
+    { value: 'theme-neo', label: 'Neo' },
+    { value: 'theme-winter', label: 'Winter' },
+    { value: 'theme-summer', label: 'Summer' },
+  ];
 
   return (
     <div className="container mx-auto">
@@ -20,7 +29,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto grid max-w-md gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Audio Settings</CardTitle>
@@ -45,6 +54,40 @@ export default function SettingsPage() {
                   aria-label="Toggle background music"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>Choose a visual theme for the DecaVerse.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                    <Label htmlFor="theme-select" className="text-base">
+                    Theme
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                        Select a color scheme that fits your style.
+                    </p>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Paintbrush className="h-5 w-5 text-muted-foreground" />
+                     <Select value={theme} onValueChange={setTheme}>
+                        <SelectTrigger className="w-[180px]" id="theme-select" aria-label="Select theme">
+                            <SelectValue placeholder="Select theme" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {themes.map(t => (
+                                <SelectItem key={t.value} value={t.value}>
+                                    {t.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
           </CardContent>
         </Card>
