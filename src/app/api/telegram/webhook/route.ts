@@ -1,5 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
+import { games } from '@/lib/data';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
@@ -35,7 +36,15 @@ export async function POST(req: NextRequest) {
       const chatId = body.message.chat.id;
       const text = body.message.text;
 
-      const replyText = `You said: "${text}".\nWelcome to the DecaVerse bot!`;
+      let replyText: string;
+
+      if (text === '/gamelist') {
+        const gameListText = games.map(game => `- ${game.title}`).join('\n');
+        replyText = `Here are the available games in the DecaVerse:\n\n${gameListText}`;
+      } else {
+        replyText = `Welcome to the DecaVerse bot!\n\nYou sent: "${text}".\n\nUse the /gamelist command to see all available games, or tap the Menu button below to launch the app!`;
+      }
+
       await sendMessage(chatId, replyText);
     }
 
