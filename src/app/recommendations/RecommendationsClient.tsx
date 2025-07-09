@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ function SubmitButton() {
 
 export function RecommendationsClient() {
   const initialState: State = { message: null, errors: {}, recommendations: null };
-  const [state, dispatch] = useFormState(getGameRecommendations, initialState);
+  const [state, dispatch] = useActionState(getGameRecommendations, initialState);
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
