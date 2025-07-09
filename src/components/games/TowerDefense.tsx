@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, FC } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
-import { Trophy, Coins, Heart, Play, Zap, Flame, Snowflake, Bot, Skull } from 'lucide-react';
+import { Trophy, Coins, Heart, Play, Zap, Flame, Snowflake, Bot, Skull, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -74,6 +74,7 @@ export const TowerDefense = () => {
     const [health, setHealth] = useState(20);
     const [selectedTower, setSelectedTower] = useState<TowerType | null>(null);
     const [gameSpeed, setGameSpeed] = useState(1);
+    const [isSoundOn, setIsSoundOn] = useState(true);
     const [cellSize, setCellSize] = useState(32);
 
     const gameContainerRef = useRef<HTMLDivElement>(null);
@@ -118,7 +119,7 @@ export const TowerDefense = () => {
     }, [cellSize]);
 
     const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
-        if (soundRef.current) {
+        if (isSoundOn && soundRef.current) {
             soundRef.current.currentTime = 0;
             soundRef.current.play().catch(e => console.error("SFX playback error:", e));
         }
@@ -129,7 +130,7 @@ export const TowerDefense = () => {
         const bossAudio = bossBgRef.current;
         if (!normalAudio || !bossAudio) return;
 
-        if (isMusicEnabled && gameState === 'playing') {
+        if (isMusicEnabled && isSoundOn && gameState === 'playing') {
             const isBossWave = wave > 0 && wave % 10 === 0;
             if (isBossWave) {
                 normalAudio.pause();
@@ -142,7 +143,7 @@ export const TowerDefense = () => {
             normalAudio.pause();
             bossAudio.pause();
         }
-    }, [gameState, wave, isMusicEnabled]);
+    }, [gameState, wave, isMusicEnabled, isSoundOn]);
 
     const startNextWave = useCallback((currentWave: number) => {
         if(gameState === 'gameover') return;
@@ -510,7 +511,7 @@ export const TowerDefense = () => {
                 </div>
                 
                  <div className="p-4 bg-muted/80 rounded-lg text-center">
-                    <h3 className="text-lg font-bold mb-2">Game Speed</h3>
+                    <h3 className="text-lg font-bold mb-2">Game Controls</h3>
                     <div className="flex justify-center gap-1">
                         {[1, 2, 4, 8].map(speed => (
                             <Button
@@ -523,6 +524,15 @@ export const TowerDefense = () => {
                                 {speed}x
                             </Button>
                         ))}
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => setIsSoundOn(s => !s)}
+                            className="w-9 h-9 ml-2"
+                        >
+                            {isSoundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                            <span className="sr-only">Toggle Sound</span>
+                        </Button>
                     </div>
                 </div>
 
