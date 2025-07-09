@@ -8,7 +8,7 @@ export function ThemeHandler() {
 
     useEffect(() => {
         // Clear all possible theme classes
-        document.documentElement.classList.remove('dark', 'light', 'theme-neo', 'theme-winter', 'theme-summer');
+        document.documentElement.classList.remove('dark', 'light', 'theme-neo', 'theme-winter', 'theme-summer', 'theme-inferno', 'theme-guardian');
         // Add the current theme class
         document.documentElement.classList.add(theme);
     }, [theme]);

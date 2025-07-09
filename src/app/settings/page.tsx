@@ -16,6 +16,8 @@ export default function SettingsPage() {
     { value: 'theme-neo', label: 'Neo' },
     { value: 'theme-winter', label: 'Winter' },
     { value: 'theme-summer', label: 'Summer' },
+    { value: 'theme-inferno', label: 'Inferno Warrior' },
+    { value: 'theme-guardian', label: 'Forest Guardian' },
   ];
 
   return (

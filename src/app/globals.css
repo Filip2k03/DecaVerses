@@ -167,6 +167,52 @@ body {
     --ring: 14 90% 58%;
     --radius: 0.5rem;
   }
+
+  .theme-inferno {
+    --background: 20 20% 8%;
+    --foreground: 20 10% 95%;
+    --card: 20 20% 12%;
+    --card-foreground: 20 10% 95%;
+    --popover: 20 20% 8%;
+    --popover-foreground: 20 10% 95%;
+    --primary: 15 90% 55%;
+    --primary-foreground: 15 90% 10%;
+    --secondary: 30 70% 30%;
+    --secondary-foreground: 30 10% 95%;
+    --muted: 30 70% 20%;
+    --muted-foreground: 30 10% 70%;
+    --accent: 0 85% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 20 20% 20%;
+    --input: 20 20% 20%;
+    --ring: 15 90% 55%;
+    --radius: 0.5rem;
+  }
+
+  .theme-guardian {
+    --background: 140 25% 10%;
+    --foreground: 140 10% 92%;
+    --card: 140 25% 14%;
+    --card-foreground: 140 10% 92%;
+    --popover: 140 25% 10%;
+    --popover-foreground: 140 10% 92%;
+    --primary: 90 60% 45%;
+    --primary-foreground: 90 60% 95%;
+    --secondary: 40 25% 35%;
+    --secondary-foreground: 40 10% 95%;
+    --muted: 40 25% 25%;
+    --muted-foreground: 40 10% 70%;
+    --accent: 180 50% 60%;
+    --accent-foreground: 180 50% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 140 25% 22%;
+    --input: 140 25% 22%;
+    --ring: 90 60% 45%;
+    --radius: 0.5rem;
+  }
 }
 
 @layer base {
