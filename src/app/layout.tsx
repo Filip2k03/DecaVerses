@@ -44,8 +44,24 @@ export default function RootLayout({
                 </main>
                 <footer className="w-full p-4 text-center text-sm text-muted-foreground mb-16 md:mb-4">
                   <p>Developed by <a href="https://techyyfilip.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Filip</a> & <a href="https://thuyakyaw.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Thuyakyaw</a>.</p>
+                  
+                  {/* First ad */}
                   <div id="container-0ac551c9a9645d12c93cd32751dd8baa"></div>
                   <Script id="invoke-script" async={true} data-cfasync="false" src="//sportsariseencyclopaedia.com/0ac551c9a9645d12c93cd32751dd8baa/invoke.js"></Script>
+                  
+                  {/* Second ad */}
+                  <Script id="ad-options-script" strategy="lazyOnload">
+                  {`
+                      atOptions = {
+                        'key' : '01a680947166c32809cc318e2f9cafe7',
+                        'format' : 'iframe',
+                        'height' : 300,
+                        'width' : 160,
+                        'params' : {}
+                      };
+                  `}
+                  </Script>
+                  <Script id="second-invoke-script" type="text/javascript" strategy="lazyOnload" src="//sportsariseencyclopaedia.com/01a680947166c32809cc318e2f9cafe7/invoke.js"></Script>
                 </footer>
               </div>
               <Toaster />
