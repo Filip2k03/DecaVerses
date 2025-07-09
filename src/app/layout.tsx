@@ -9,7 +9,7 @@ import { ThemeHandler } from '@/components/ThemeHandler';
 
 export const metadata: Metadata = {
   title: 'DecaVerse',
-  description: 'An offline games platform with local multiplayer and AI recommendations.',
+  description: 'An small games platform with local multiplayer and AI recommendations.',
   manifest: '/manifest.json',
 };
 
