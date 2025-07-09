@@ -4,14 +4,14 @@ import Link from 'next/link';
 import { Gamepad2, Trophy, Sparkles, Settings } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button, buttonVariants } from './ui/button';
+import { buttonVariants } from './ui/button';
 import { NewsTicker } from './NewsTicker';
 
 export function Header() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', label: 'Games', icon: Gamepad2 },
+    { href: '/games', label: 'Games', icon: Gamepad2 },
     { href: '/scores', label: 'Scores', icon: Trophy },
     { href: '/recommendations', label: 'For You', icon: Sparkles },
     { href: '/settings', label: 'Settings', icon: Settings },
@@ -31,7 +31,7 @@ export function Header() {
               href={item.href}
               className={cn(
                 'transition-colors hover:text-primary',
-                pathname === item.href ? 'text-primary' : 'text-foreground/60'
+                pathname === item.href || (item.href === '/games' && pathname.startsWith('/play')) ? 'text-primary' : 'text-foreground/60'
               )}
             >
               {item.label}
@@ -52,7 +52,7 @@ export function Header() {
               className={cn(
                 buttonVariants({ variant: "ghost", size: "sm" }),
                 "flex flex-col h-16 w-16",
-                pathname === item.href
+                pathname === item.href || (item.href === '/games' && pathname.startsWith('/play'))
                   ? "text-primary"
                   : "text-muted-foreground"
               )}
