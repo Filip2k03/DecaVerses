@@ -6,6 +6,7 @@ import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
 import { Trophy, Coins, Heart, Play, Zap, Flame, Snowflake, Bot, Skull } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSettings } from '@/context/SettingsContext';
 
 const GRID_SIZE = 15;
 const ENEMY_BASE_SPEED = 0.5;
@@ -80,6 +81,15 @@ export const TowerDefense = () => {
     const pathRef = useRef<SVGPathElement>(null);
     const pathLength = useRef(0);
 
+    const { isMusicEnabled } = useSettings();
+    const normalBgRef = useRef<HTMLAudioElement>(null);
+    const bossBgRef = useRef<HTMLAudioElement>(null);
+    const laserSfxRef = useRef<HTMLAudioElement>(null);
+    const fireSfxRef = useRef<HTMLAudioElement>(null);
+    const iceSfxRef = useRef<HTMLAudioElement>(null);
+    const buildSfxRef = useRef<HTMLAudioElement>(null);
+    const explosionSfxRef = useRef<HTMLAudioElement>(null);
+
     const score = useMemo(() => Math.max(0, (wave -1) * 100), [wave]);
     const { scores, updateScore } = useGame();
     const highScore = scores[21] || 0;
@@ -106,6 +116,33 @@ export const TowerDefense = () => {
         if (cellSize === 0) return '';
         return PATH_COORDS.map((p, i) => (i === 0 ? 'M' : 'L') + ` ${p[0] * cellSize + cellSize / 2} ${p[1] * cellSize + cellSize / 2}`).join(' ');
     }, [cellSize]);
+
+    const playSound = (soundRef: React.RefObject<HTMLAudioElement>) => {
+        if (soundRef.current) {
+            soundRef.current.currentTime = 0;
+            soundRef.current.play().catch(e => console.error("SFX playback error:", e));
+        }
+    };
+    
+    useEffect(() => {
+        const normalAudio = normalBgRef.current;
+        const bossAudio = bossBgRef.current;
+        if (!normalAudio || !bossAudio) return;
+
+        if (isMusicEnabled && gameState === 'playing') {
+            const isBossWave = wave > 0 && wave % 10 === 0;
+            if (isBossWave) {
+                normalAudio.pause();
+                bossAudio.play().catch(e => console.error("Boss BGM error", e));
+            } else {
+                bossAudio.pause();
+                normalAudio.play().catch(e => console.error("Normal BGM error", e));
+            }
+        } else {
+            normalAudio.pause();
+            bossAudio.pause();
+        }
+    }, [gameState, wave, isMusicEnabled]);
 
     const startNextWave = useCallback((currentWave: number) => {
         if(gameState === 'gameover') return;
@@ -179,6 +216,7 @@ export const TowerDefense = () => {
         if (currency >= spec.cost) {
             setCurrency(c => c - spec.cost);
             setTowers(t => [...t, { id: Date.now(), x, y, type: selectedTower, ...spec, health: TOWER_MAX_HEALTH, maxHealth: TOWER_MAX_HEALTH, lastFired: 0 }]);
+            playSound(buildSfxRef);
         }
     };
     
@@ -218,6 +256,10 @@ export const TowerDefense = () => {
                 if (bestTarget) {
                     newProjectiles.push({ id: Date.now() + Math.random(), x: towerCenterX, y: towerCenterY, targetId: bestTarget.id, type: tower.type });
                     tower.lastFired = now;
+
+                    if (tower.type === 'laser') playSound(laserSfxRef);
+                    if (tower.type === 'fire') playSound(fireSfxRef);
+                    if (tower.type === 'ice') playSound(iceSfxRef);
                 }
             }
         });
@@ -276,6 +318,7 @@ export const TowerDefense = () => {
             
             if (dist < PROJECTILE_SPEED * gameSpeed) {
                 playerProjectilesToRemove.add(proj.id);
+                playSound(explosionSfxRef);
                 if (!enemiesToDamage.has(target.id)) enemiesToDamage.set(target.id, []);
                 enemiesToDamage.get(target.id)!.push({ damage: TOWER_SPECS[proj.type].damage, type: proj.type });
 
@@ -504,6 +547,15 @@ export const TowerDefense = () => {
                     </div>
                 </div>
             </div>
+             <>
+                <audio ref={normalBgRef} src="https://audio-previews.elements.envatousercontent.com/files/274806894/preview.mp3" loop preload="auto" />
+                <audio ref={bossBgRef} src="https://audio-previews.elements.envatousercontent.com/files/465719910/preview.mp3" loop preload="auto" />
+                <audio ref={laserSfxRef} src="https://assets.codepen.io/210284/laser.mp3" preload="auto" />
+                <audio ref={fireSfxRef} src="https://assets.codepen.io/210284/whoosh.mp3" preload="auto" />
+                <audio ref={iceSfxRef} src="https://assets.codepen.io/210284/ice.mp3" preload="auto" />
+                <audio ref={buildSfxRef} src="https://assets.codepen.io/210284/click.mp3" preload="auto" />
+                <audio ref={explosionSfxRef} src="https://assets.codepen.io/210284/explosion.mp3" preload="auto" />
+            </>
         </div>
     );
 };
