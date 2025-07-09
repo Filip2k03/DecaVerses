@@ -14,6 +14,7 @@ const GAME_WIDTH = 600;
 const GAME_HEIGHT = 400;
 
 const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 2, 4];
+const SCORE_LIMITS = [5, 10, 25, 50, 75, 100];
 type GameState = 'menu' | 'playing' | 'paused' | 'gameover';
 
 export const Pong = () => {
@@ -24,6 +25,7 @@ export const Pong = () => {
   const [scores, setScores] = useState({ player: 0, opponent: 0 });
   const [gameState, setGameState] = useState<GameState>('menu');
   const [gameSpeed, setGameSpeed] = useState(1);
+  const [winningScore, setWinningScore] = useState(10);
   
   const gameLoopRef = useRef<number>();
   const gameAreaRef = useRef<HTMLDivElement>(null);
@@ -149,10 +151,10 @@ export const Pong = () => {
   }, [ball.y, ballVelocity, playerPaddle, opponentPaddle, gameState, resetBall, gameSpeed]);
   
   useEffect(() => {
-    if (scores.player >= 5 || scores.opponent >= 5) {
+    if (scores.player >= winningScore || scores.opponent >= winningScore) {
       setGameState('gameover');
     }
-  }, [scores]);
+  }, [scores, winningScore]);
 
   useEffect(() => {
     if (gameState === 'playing') {
@@ -177,13 +179,23 @@ export const Pong = () => {
     if (gameState === 'menu') {
         return <>
             <h2 className="text-5xl font-bold font-headline">PONG</h2>
-            <Button onClick={startGame} variant="outline" size="lg">Start Game</Button>
+            <div className="my-4 text-center">
+                <h3 className="text-xl mb-2 font-semibold">Play to:</h3>
+                <div className="flex gap-2 flex-wrap justify-center max-w-sm">
+                    {SCORE_LIMITS.map(score => (
+                        <Button key={score} onClick={() => setWinningScore(score)} variant={winningScore === score ? 'default' : 'outline'}>
+                            {score}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+            <Button onClick={startGame} variant="outline" size="lg" className="mt-4">Start Game</Button>
         </>
     }
     if (gameState === 'gameover') {
         return <>
-            <h2 className="text-4xl font-bold font-headline">{scores.player >= 5 ? 'You Win!' : 'You Lose!'}</h2>
-            <Button onClick={startGame} variant="outline">Play Again</Button>
+            <h2 className="text-4xl font-bold font-headline">{scores.player >= winningScore ? 'You Win!' : 'You Lose!'}</h2>
+            <Button onClick={() => setGameState('menu')} variant="outline">Back to Menu</Button>
         </>
     }
     if (gameState === 'paused') {
@@ -229,9 +241,9 @@ export const Pong = () => {
                     {gameState === 'paused' ? <Play /> : <Pause />}
                     <span className="ml-2">{gameState === 'paused' ? 'Resume' : 'Pause'}</span>
                 </Button>
-                 <Button onClick={startGame} variant="destructive">
+                 <Button onClick={() => setGameState('menu')} variant="destructive">
                     <RefreshCw />
-                    <span className="ml-2">Restart</span>
+                    <span className="ml-2">Quit & Reset</span>
                 </Button>
             </div>
           )}
