@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from '@/components/ui/toaster';
@@ -44,7 +43,6 @@ export default function RootLayout({
                 </main>
                 <footer className="w-full p-4 text-center text-sm text-muted-foreground mb-16 md:mb-4">
                   <p>Developed by <a href="https://techyyfilip.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Filip</a> & <a href="https://thuyakyaw.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Thuyakyaw</a>.</p>
-                  <div id="container-0ac551c9a9645d12c93cd32751dd8baa" className="my-4 flex justify-center"></div>
                 </footer>
               </div>
               <Toaster />
@@ -52,11 +50,6 @@ export default function RootLayout({
             </GameProvider>
           </SettingsProvider>
         </div>
-        <Script
-          id="native-banner-ad"
-          data-cfasync="false"
-          src="//sportsariseencyclopaedia.com/0ac551c9a9645d12c93cd32751dd8baa/invoke.js"
-        />
       </body>
     </html>
   );
