@@ -14,7 +14,7 @@ export default function GamesPage() {
           DecaVerse Game Portal
         </h1>
         <p className="mx-auto mt-4 max-w-[700px] text-lg text-muted-foreground md:text-xl">
-          Your portal to a universe of classic and modern offline games. Ready to play?
+          Your portal to a universe of classic and modern small games. Ready to play?
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 {
   "name": "DecaVerse",
   "short_name": "DecaVerse",
-  "description": "An offline games platform with local multiplayer and AI recommendations.",
+  "description": "An small games platform with local multiplayer and AI recommendations.",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",

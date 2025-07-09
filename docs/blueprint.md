@@ -2,7 +2,7 @@
 
 ## Core Features:
 
-- Bundled Games: Offer ten pre-selected offline games within the app. No additional downloads required.
+- Bundled Games: Offer ten pre-selected small games within the app. No additional downloads required.
 - Local Multiplayer: Enable a local multiplayer mode where users can connect devices via Bluetooth to play supported games against each other.
 - Game Launcher: Create a seamless and user-friendly interface for game selection and launching.
 - Local Score Tracking: Implement a system for keeping track of individual high scores

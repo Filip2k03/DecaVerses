@@ -14,7 +14,7 @@ export function NewsTicker() {
         setHeadlines(result.headlines);
       } catch (error) {
         console.error("Failed to fetch news headlines:", error);
-        setHeadlines(["++ All news feeds currently offline. Check back later. ++"]);
+        setHeadlines(["++ All news feeds currently small. Check back later. ++"]);
       }
     }
     fetchHeadlines();

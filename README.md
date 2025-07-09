@@ -4,12 +4,12 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
 
-Your portal to a universe of classic and modern offline games. Built for gamers who appreciate both retro charm and modern gameplay mechanics.
+Your portal to a universe of classic and modern small games. Built for gamers who appreciate both retro charm and modern gameplay mechanics.
 
 ![DecaVerse Screenshot](https://d41chssnpqdne.cloudfront.net/user_upload_by_module/chat_bot/files/48776705/LpEmJFVjN2HJc0HT.png?Expires=1753251597&Signature=p9cKis8wpquyZc0i8ru7tARnApJKfOwgMlJfZDdCu8rbcoIcrh50nglXIplOkYWbjgy73Jh6knlfRajN~CT6Rw2zEJpPPTKMK~CbwfpWjW9TiqO47It3YYhYl2HOBSQEWbODAeMkXzbKBfDsXn33s42mot2ROifAkHRGF2VGxSVvF8OfWYMqzk3IJYerJJZLDzV9JZStQS2RAvJbhlrSSbuCl6JzoTD55NFZXLdo6qAEmW0p-z1d6kGam4a~r-paiZ17098nTp4Ujei4aawG4C58zXB0wuzARHX9IE3bVa8nutHZf5n1YCbd5T9QCUXueGqRjaHY3TqDE2fJu6vutg__&Key-Pair-Id=K3USGZIKWMDCSX)
 
 ## Features ✨
-- 25+ classic & modern offline games
+- 25+ classic & modern Small games
 - Cross-platform compatibility
 - Persistent high score tracking
 - Responsive touch-friendly controls
@@ -38,7 +38,7 @@ Your portal to a universe of classic and modern offline games. Built for gamers 
 
 ## Installation (For Developers) 💻
 ```bash
-git clone https://github.com/yourusername/decaverse.git
+git clone https://github.com/Filip2k03/decaverse.git
 cd decaverse
 # Open index.html in your preferred browser
 ```
