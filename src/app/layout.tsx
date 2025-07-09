@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from '@/components/ui/toaster';
@@ -50,6 +51,7 @@ export default function RootLayout({
             </GameProvider>
           </SettingsProvider>
         </div>
+        <Script id="ad-script" type='text/javascript' src='//sportsariseencyclopaedia.com/53/34/cb/5334cb5f9a25d3343db8d9a1d0c3b555.js' />
       </body>
     </html>
   );
