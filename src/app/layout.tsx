@@ -6,6 +6,7 @@ import { SettingsProvider } from '@/context/SettingsContext';
 import { GameProvider } from '@/context/GameContext';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { ThemeHandler } from '@/components/ThemeHandler';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'DecaVerse',
@@ -43,6 +44,8 @@ export default function RootLayout({
                 </main>
                 <footer className="w-full p-4 text-center text-sm text-muted-foreground mb-16 md:mb-4">
                   <p>Developed by <a href="https://techyyfilip.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Filip</a> & <a href="https://thuyakyaw.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Thuyakyaw</a>.</p>
+                  <div id="container-0ac551c9a9645d12c93cd32751dd8baa"></div>
+                  <Script id="invoke-script" async={true} data-cfasync="false" src="//sportsariseencyclopaedia.com/0ac551c9a9645d12c93cd32751dd8baa/invoke.js"></Script>
                 </footer>
               </div>
               <Toaster />
