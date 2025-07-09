@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Chess, type Square, type PieceSymbol, type Color } from 'chess.js';
+import { Chess as ChessGame, type Square, type PieceSymbol, type Color } from 'chess.js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,7 @@ const BlackPawn = (props: React.SVGProps<SVGSVGElement>) => (<svg {...props} vie
 
 
 type GameState = {
-  game: Chess;
+  game: ChessGame;
   board: ({ square: Square; type: PieceSymbol; color: Color; } | null)[][];
   gameMode: 'menu' | 'pvp' | 'pvc';
   selectedSquare: Square | null;
@@ -50,7 +50,7 @@ const getPieceComponent = (piece: { type: PieceSymbol; color: Color } | null) =>
 
 
 export function Chess() {
-  const [game, setGame] = useState(new Chess());
+  const [game, setGame] = useState(new ChessGame());
   const [board, setBoard] = useState<({ square: Square; type: PieceSymbol; color: Color; } | null)[][]>(game.board());
   const [gameMode, setGameMode] = useState<'menu' | 'pvp' | 'pvc'>('menu');
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
@@ -73,7 +73,7 @@ export function Chess() {
   }, [game]);
   
   const resetGame = useCallback(() => {
-    const newGame = new Chess();
+    const newGame = new ChessGame();
     setGame(newGame);
     setBoard(newGame.board());
     setSelectedSquare(null);
@@ -87,7 +87,7 @@ export function Chess() {
 
   const makeMove = useCallback((from: Square, to: Square) => {
     try {
-        const gameCopy = new Chess(game.fen());
+        const gameCopy = new ChessGame(game.fen());
         const move = gameCopy.move({
             from,
             to,
