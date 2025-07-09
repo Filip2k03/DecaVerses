@@ -36,12 +36,33 @@ Your portal to a universe of classic and modern offline games. Built for gamers 
 - **Memory Match** - Concentration memory game
 - **Simon Says** - Light/sound pattern repetition
 
-## Installation 💻
+## Installation (For Developers) 💻
 ```bash
 git clone https://github.com/yourusername/decaverse.git
 cd decaverse
 # Open index.html in your preferred browser
 ```
+
+## Installing as an App (PWA)
+
+You can install DecaVerse on your mobile device or desktop for a native-like experience.
+
+**On Android:**
+1.  Open the DecaVerse URL in Chrome.
+2.  Tap the three-dot menu icon in the top-right corner.
+3.  Select **"Install app"** or **"Add to Home screen"**.
+4.  Follow the on-screen prompts.
+
+**On iOS (iPhone/iPad):**
+1.  Open the DecaVerse URL in Safari.
+2.  Tap the **Share** button (the square with an upward arrow).
+3.  Scroll down and select **"Add to Home Screen"**.
+4.  Confirm the name and tap **"Add"**.
+
+**On Desktop (Chrome/Edge):**
+1.  Navigate to the DecaVerse URL.
+2.  Look for an **install icon** (usually a screen with a downward arrow) in the address bar.
+3.  Click it and follow the prompts to install.
 
 ## Usage 🚀
 1. Clone repository
