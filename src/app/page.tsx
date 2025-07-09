@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Gamepad2 } from 'lucide-react';
+import { Gamepad } from 'lucide-react';
 import Link from 'next/link';
 
 export default function WelcomePage() {
@@ -9,7 +9,7 @@ export default function WelcomePage() {
       <div className="relative">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-full blur-xl opacity-75 animate-pulse"></div>
         <div className="relative inline-block rounded-full bg-background p-6 border-2 border-primary/20">
-            <Gamepad2 className="h-16 w-16 text-primary" style={{ filter: 'drop-shadow(0 0 10px hsl(var(--primary)))' }} />
+            <Gamepad className="h-16 w-16 text-primary" style={{ filter: 'drop-shadow(0 0 10px hsl(var(--primary)))' }} />
         </div>
       </div>
       

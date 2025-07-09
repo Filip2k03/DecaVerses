@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, Trophy, Sparkles, Settings } from 'lucide-react';
+import { Gamepad, Trophy, Sparkles, Settings } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from './ui/button';
@@ -11,7 +12,7 @@ export function Header() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/games', label: 'Games', icon: Gamepad2 },
+    { href: '/games', label: 'Games', icon: Gamepad },
     { href: '/scores', label: 'Scores', icon: Trophy },
     { href: '/recommendations', label: 'For You', icon: Sparkles },
     { href: '/settings', label: 'Settings', icon: Settings },
@@ -21,7 +22,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Gamepad2 className="h-6 w-6 text-primary" style={{ filter: 'drop-shadow(0 0 6px hsl(var(--primary)))' }}/>
+          <Gamepad className="h-6 w-6 text-primary" style={{ filter: 'drop-shadow(0 0 6px hsl(var(--primary)))' }}/>
           <span className="font-bold text-lg font-headline" style={{ textShadow: '0 0 6px hsl(var(--primary))' }}>DecaVerse</span>
         </Link>
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">

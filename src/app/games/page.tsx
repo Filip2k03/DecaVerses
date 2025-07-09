@@ -1,14 +1,14 @@
 
 import { GameCard } from '@/components/GameCard';
 import { games } from '@/lib/data';
-import { Gamepad2 } from 'lucide-react';
+import { Gamepad } from 'lucide-react';
 
 export default function GamesPage() {
   return (
     <div className="container mx-auto">
       <div className="mb-12 text-center">
         <div className="inline-block rounded-full bg-primary/10 p-4">
-            <Gamepad2 className="h-10 w-10 text-primary" />
+            <Gamepad className="h-10 w-10 text-primary" />
         </div>
         <h1 className="mt-4 text-4xl font-bold tracking-tighter sm:text-6xl font-headline animate-text-flicker">
           DecaVerse Game Portal
