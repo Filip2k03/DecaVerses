@@ -1,21 +1,19 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, FC } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
 import { Trophy, Coins, Heart, Play, Zap, Flame, Snowflake, Bot, Skull } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const GRID_SIZE = 15;
-const CELL_SIZE = 32;
 const ENEMY_BASE_SPEED = 0.5;
 const PROJECTILE_SPEED = 5;
 const TOWER_MAX_HEALTH = 500;
 const BOSS_CREDITS = 75;
 
 const PATH_COORDS = [[0, 7], [1, 7], [2, 7], [2, 6], [2, 5], [2, 4], [3, 4], [4, 4], [5, 4], [5, 5], [5, 6], [6, 6], [7, 6], [7, 5], [7, 4], [7, 3], [7, 2], [8, 2], [9, 2], [10, 2], [10, 3], [10, 4], [10, 5], [10, 6], [10, 7], [10, 8], [10, 9], [11, 9], [12, 9], [12, 8], [12, 7], [12, 6], [13, 6], [14, 6]];
-const SVG_PATH = PATH_COORDS.map((p, i) => (i === 0 ? 'M' : 'L') + ` ${p[0] * CELL_SIZE + CELL_SIZE/2} ${p[1] * CELL_SIZE + CELL_SIZE/2}`).join(' ');
 
 type TowerType = 'laser' | 'fire' | 'ice';
 type EnemyType = 'normal' | 'shooter' | 'boss';
@@ -36,7 +34,7 @@ const ENEMY_SPECS = {
     boss: { fireRate: 1500, damage: 50, range: 5 },
 };
 
-const SPLASH_RADIUS = 1.5 * CELL_SIZE;
+const SPLASH_RADIUS_MULTIPLIER = 1.5;
 const SLOW_DURATION = 2000;
 
 const EnemySprite = ({ health, maxHealth, type }: { health: number, maxHealth: number, type: EnemyType }) => {
@@ -75,7 +73,9 @@ export const TowerDefense = () => {
     const [health, setHealth] = useState(20);
     const [selectedTower, setSelectedTower] = useState<TowerType | null>(null);
     const [gameSpeed, setGameSpeed] = useState(1);
+    const [cellSize, setCellSize] = useState(32);
 
+    const gameContainerRef = useRef<HTMLDivElement>(null);
     const gameLoopRef = useRef<number>();
     const pathRef = useRef<SVGPathElement>(null);
     const pathLength = useRef(0);
@@ -84,50 +84,37 @@ export const TowerDefense = () => {
     const { scores, updateScore } = useGame();
     const highScore = scores[21] || 0;
 
+    useEffect(() => {
+        const container = gameContainerRef.current;
+        if (!container) return;
+
+        const observer = new ResizeObserver(() => {
+            if (container) {
+                setCellSize(container.offsetWidth / GRID_SIZE);
+            }
+        });
+        observer.observe(container);
+
+        // Initial size set
+        setCellSize(container.offsetWidth / GRID_SIZE);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+    
+    const svgPath = useMemo(() => {
+        if (cellSize === 0) return '';
+        return PATH_COORDS.map((p, i) => (i === 0 ? 'M' : 'L') + ` ${p[0] * cellSize + cellSize / 2} ${p[1] * cellSize + cellSize / 2}`).join(' ');
+    }, [cellSize]);
+
     const startNextWave = useCallback((currentWave: number) => {
         if(gameState === 'gameover') return;
         setGameState('playing');
         const newWave = currentWave + 1;
         setWave(newWave);
         setWaveSpawning(true);
-
-        const isBossWave = newWave % 10 === 0;
-        const enemyCount = isBossWave ? 1 : 5 + newWave * 3;
-        const enemyBaseHealth = 100 + newWave * 25;
-        let spawnedCount = 0;
-
-        const spawnInterval = setInterval(() => {
-            if (spawnedCount < enemyCount) {
-                let enemyType: EnemyType = 'normal';
-                let health = enemyBaseHealth;
-
-                if (isBossWave) {
-                    enemyType = 'boss';
-                    health = 2000 + newWave * 200;
-                } else if (newWave >= 11 && spawnedCount % 5 === 0) { // 1 in 5 is a shooter
-                    enemyType = 'shooter';
-                    health = enemyBaseHealth * 1.2;
-                }
-
-                setEnemies(e => [...e, { 
-                    id: Date.now() + spawnedCount, 
-                    pathProgress: 0, 
-                    health: health, 
-                    maxHealth: health, 
-                    speed: ENEMY_BASE_SPEED, 
-                    slowUntil: 0,
-                    type: enemyType,
-                    lastFired: 0,
-                }]);
-                spawnedCount++;
-            } else {
-                clearInterval(spawnInterval);
-                setWaveSpawning(false);
-            }
-        }, 800 / gameSpeed);
-
-        return () => clearInterval(spawnInterval);
-    }, [gameState, gameSpeed]);
+    }, [gameState]);
     
     const resetGame = useCallback(() => {
         setTowers([]);
@@ -142,7 +129,6 @@ export const TowerDefense = () => {
         setGameState('playing');
         startNextWave(0);
     }, [startNextWave]);
-
 
     useEffect(() => {
         if (waveSpawning && wave > 0) {
@@ -178,7 +164,7 @@ export const TowerDefense = () => {
                     clearInterval(spawnInterval);
                     setWaveSpawning(false);
                 }
-            }, 500 / gameSpeed);
+            }, 800 / gameSpeed);
 
             return () => clearInterval(spawnInterval);
         }
@@ -216,15 +202,15 @@ export const TowerDefense = () => {
         const newProjectiles: Projectile[] = [];
         tempTowers.forEach(tower => {
             if (now - tower.lastFired > tower.fireRate / gameSpeed) {
-                const towerCenterX = tower.x * CELL_SIZE + CELL_SIZE / 2;
-                const towerCenterY = tower.y * CELL_SIZE + CELL_SIZE / 2;
+                const towerCenterX = tower.x * cellSize + cellSize / 2;
+                const towerCenterY = tower.y * cellSize + cellSize / 2;
                 let bestTarget: Enemy | null = null;
                 let maxProgress = -1;
 
                 tempEnemies.forEach(enemy => {
                     const enemyCoords = pathRef.current!.getPointAtLength(enemy.pathProgress);
                     const dist = Math.hypot(enemyCoords.x - towerCenterX, enemyCoords.y - towerCenterY);
-                    if (dist < tower.range * CELL_SIZE && enemy.pathProgress > maxProgress) {
+                    if (dist < tower.range * cellSize && enemy.pathProgress > maxProgress) {
                         maxProgress = enemy.pathProgress;
                         bestTarget = enemy;
                     }
@@ -249,9 +235,9 @@ export const TowerDefense = () => {
                     let minDistance = Infinity;
                     
                     tempTowers.forEach(tower => {
-                        const towerCoords = {x: tower.x * CELL_SIZE + CELL_SIZE/2, y: tower.y * CELL_SIZE + CELL_SIZE/2};
+                        const towerCoords = {x: tower.x * cellSize + cellSize/2, y: tower.y * cellSize + cellSize/2};
                         const dist = Math.hypot(enemyCoords.x - towerCoords.x, enemyCoords.y - towerCoords.y);
-                        if (dist < spec.range * CELL_SIZE && dist < minDistance) {
+                        if (dist < spec.range * cellSize && dist < minDistance) {
                             minDistance = dist;
                             closestTower = tower;
                         }
@@ -265,7 +251,6 @@ export const TowerDefense = () => {
             }
         });
         tempEnemyProjectiles.push(...newEnemyProjectiles);
-
 
         // 3. Enemy Movement
         const enemiesReachedEnd = new Set<number>();
@@ -296,10 +281,11 @@ export const TowerDefense = () => {
                 enemiesToDamage.get(target.id)!.push({ damage: TOWER_SPECS[proj.type].damage, type: proj.type });
 
                 if (proj.type === 'fire') {
+                    const splashRadius = SPLASH_RADIUS_MULTIPLIER * cellSize;
                     tempEnemies.forEach(other => {
                         if (other.id === target.id) return;
                         const otherCoords = pathRef.current!.getPointAtLength(other.pathProgress);
-                        if (Math.hypot(otherCoords.x - targetCoords.x, otherCoords.y - targetCoords.y) < SPLASH_RADIUS) {
+                        if (Math.hypot(otherCoords.x - targetCoords.x, otherCoords.y - targetCoords.y) < splashRadius) {
                             if (!enemiesToDamage.has(other.id)) enemiesToDamage.set(other.id, []);
                             enemiesToDamage.get(other.id)!.push({ damage: TOWER_SPECS.fire.damage, type: 'fire' });
                         }
@@ -317,7 +303,7 @@ export const TowerDefense = () => {
         tempEnemyProjectiles.forEach(proj => {
             const target = tempTowers.find(t => t.id === proj.targetId);
             if (!target) { enemyProjectilesToRemove.add(proj.id); return; }
-            const targetCoords = {x: target.x * CELL_SIZE + CELL_SIZE/2, y: target.y * CELL_SIZE + CELL_SIZE/2};
+            const targetCoords = {x: target.x * cellSize + cellSize/2, y: target.y * cellSize + cellSize/2};
             const dx = targetCoords.x - proj.x, dy = targetCoords.y - proj.y;
             const dist = Math.hypot(dx, dy);
             
@@ -372,7 +358,7 @@ export const TowerDefense = () => {
         }
 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
-    }, [towers, enemies, projectiles, enemyProjectiles, health, currency, gameState, waveSpawning, gameSpeed, score, updateScore]);
+    }, [towers, enemies, projectiles, enemyProjectiles, health, currency, gameState, waveSpawning, gameSpeed, score, updateScore, cellSize]);
 
     useEffect(() => {
         if(pathRef.current) pathLength.current = pathRef.current.getTotalLength();
@@ -382,12 +368,12 @@ export const TowerDefense = () => {
         return () => { if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); };
     }, [gameState, gameLoop]);
     
-    const TowerComponent = ({ tower }: { tower: Tower }) => {
+    const TowerComponent = ({ tower, cellSize }: { tower: Tower, cellSize: number }) => {
         const Icon = TOWER_SPECS[tower.type].icon;
         const healthPercentage = (tower.health / tower.maxHealth) * 100;
         return (
-            <div className="absolute flex flex-col items-center justify-center pointer-events-none" style={{ left: tower.x * CELL_SIZE, top: tower.y * CELL_SIZE, width: CELL_SIZE, height: CELL_SIZE }}>
-                <Icon className="w-6 h-6 text-cyan-400 drop-shadow-[0_0_5px_hsl(var(--primary))]"/>
+            <div className="absolute flex flex-col items-center justify-center pointer-events-none" style={{ left: tower.x * cellSize, top: tower.y * cellSize, width: cellSize, height: cellSize }}>
+                <Icon className="w-4/6 h-4/6 text-cyan-400 drop-shadow-[0_0_5px_hsl(var(--primary))]"/>
                 <div className="absolute -bottom-1 w-6 h-1 bg-gray-600 rounded-full overflow-hidden border border-black/50">
                      <div className="h-full bg-gradient-to-r from-red-500 to-green-500" style={{ width: `${healthPercentage}%` }} />
                 </div>
@@ -417,8 +403,12 @@ export const TowerDefense = () => {
     };
     
     return (
-        <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
-            <div className="relative bg-gray-900 border-2 border-primary/50 overflow-hidden" style={{ width: GRID_SIZE * CELL_SIZE, height: GRID_SIZE * CELL_SIZE, boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 15px hsl(var(--primary)/0.3)'}}>
+        <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 w-full">
+            <div 
+                ref={gameContainerRef}
+                className="relative w-full aspect-square max-w-md lg:w-auto lg:h-full lg:max-w-[480px] bg-gray-900 border-2 border-primary/50 overflow-hidden" 
+                style={{boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 15px hsl(var(--primary)/0.3)'}}
+            >
                  {(gameState === 'start' || gameState === 'gameover' || (gameState === 'wave_over' && !waveSpawning)) && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 text-white gap-4 text-center p-4">
                         {gameState === 'start' && <>
@@ -437,7 +427,7 @@ export const TowerDefense = () => {
                     </div>
                 )}
                 <svg width="100%" height="100%" className="absolute inset-0 pointer-events-none">
-                    <path ref={pathRef} d={SVG_PATH} stroke="hsl(var(--primary)/0.2)" strokeWidth="20" fill="none" />
+                    <path ref={pathRef} d={svgPath} stroke="hsl(var(--primary)/0.2)" strokeWidth={cellSize} fill="none" />
                     {projectiles.map(p => <ProjectileComponent key={p.id} projectile={p} />)}
                     {enemyProjectiles.map(p => <EnemyProjectileComponent key={p.id} projectile={p} />)}
                 </svg>
@@ -451,7 +441,7 @@ export const TowerDefense = () => {
                     })}
                 </div>
                 
-                {towers.map(tower => <TowerComponent key={tower.id} tower={tower} />)}
+                {towers.map(tower => <TowerComponent key={tower.id} tower={tower} cellSize={cellSize} />)}
                 
                 {enemies.map(enemy => <EnemyComponent key={enemy.id} enemy={enemy} />)}
             </div>
