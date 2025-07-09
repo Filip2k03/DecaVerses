@@ -27,6 +27,7 @@ import { LogicGates } from '@/components/games/LogicGates';
 import { CyberJumper } from '@/components/games/CyberJumper';
 import { DroidAnnihilator } from '@/components/games/DroidAnnihilator';
 import { OrbitalDecay } from '@/components/games/OrbitalDecay';
+import { TypingGame } from '@/components/games/TypingGame';
 
 export default function GamePage({ params }: { params: { id: string } }) {
   const game = games.find((g) => g.id === parseInt(params.id, 10));
@@ -62,6 +63,7 @@ export default function GamePage({ params }: { params: { id: string } }) {
       case 23: return <CyberJumper />;
       case 24: return <DroidAnnihilator />;
       case 25: return <OrbitalDecay />;
+      case 26: return <TypingGame />;
       default:
         return (
           <Card className="w-full max-w-md">

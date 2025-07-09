@@ -32,4 +32,5 @@ export const games: Game[] = [
   { id: 23, title: 'Cyber Jumper', description: 'A futuristic side-scrolling platformer.', category: 'Platformer', icon: 'CyberJumperIcon'},
   { id: 24, title: 'Droid Annihilator', description: 'A fast-paced top-down arcade shooter.', category: 'Arcade', icon: 'DroidAnnihilatorIcon'},
   { id: 25, title: 'Orbital Decay', description: 'A tile-matching puzzle with an orbital twist.', category: 'Puzzle', icon: 'OrbitalDecayIcon'},
+  { id: 26, title: 'Typing Test', description: 'Measure your typing speed and accuracy.', category: 'Utility', icon: 'TypingIcon'},
 ];
