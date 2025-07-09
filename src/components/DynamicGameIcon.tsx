@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import type { LucideProps } from 'lucide-react';
 import { Blocks, Ship, Crown, Calculator, Grid3x3, Bomb } from 'lucide-react';
-import { TicTacToeIcon, SnakeIcon, ClawMachineIcon, BearIcon, ConnectFourIcon, PongIcon, AsteroidsIcon, MemoryMatchIcon, SimonSaysIcon, WhacAMoleIcon, SolitaireIcon, HangmanIcon, SpaceInvadersIcon, DoodleJumpIcon, QuantumBreakoutIcon, TowerDefenseIcon, LogicGatesIcon } from '@/components/GameIcons';
+import { TicTacToeIcon, SnakeIcon, ClawMachineIcon, BearIcon, ConnectFourIcon, PongIcon, AsteroidsIcon, MemoryMatchIcon, SimonSaysIcon, WhacAMoleIcon, SolitaireIcon, HangmanIcon, SpaceInvadersIcon, DoodleJumpIcon, QuantumBreakoutIcon, TowerDefenseIcon, LogicGatesIcon, CyberJumperIcon, DroidAnnihilatorIcon, OrbitalDecayIcon } from '@/components/GameIcons';
 
 const iconMap: Record<string, FC<LucideProps>> = {
   TicTacToeIcon,
@@ -27,6 +27,9 @@ const iconMap: Record<string, FC<LucideProps>> = {
   QuantumBreakoutIcon,
   TowerDefenseIcon,
   LogicGatesIcon,
+  CyberJumperIcon,
+  DroidAnnihilatorIcon,
+  OrbitalDecayIcon,
 };
 
 interface DynamicGameIconProps extends LucideProps {

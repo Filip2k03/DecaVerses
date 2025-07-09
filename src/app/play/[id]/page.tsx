@@ -24,6 +24,9 @@ import { DoodleJump } from '@/components/games/DoodleJump';
 import { QuantumBreakout } from '@/components/games/QuantumBreakout';
 import { TowerDefense } from '@/components/games/TowerDefense';
 import { LogicGates } from '@/components/games/LogicGates';
+import { CyberJumper } from '@/components/games/CyberJumper';
+import { DroidAnnihilator } from '@/components/games/DroidAnnihilator';
+import { OrbitalDecay } from '@/components/games/OrbitalDecay';
 
 export default function GamePage({ params }: { params: { id: string } }) {
   const game = games.find((g) => g.id === parseInt(params.id, 10));
@@ -56,6 +59,9 @@ export default function GamePage({ params }: { params: { id: string } }) {
       case 20: return <QuantumBreakout />;
       case 21: return <TowerDefense />;
       case 22: return <LogicGates />;
+      case 23: return <CyberJumper />;
+      case 24: return <DroidAnnihilator />;
+      case 25: return <OrbitalDecay />;
       default:
         return (
           <Card className="w-full max-w-md">
