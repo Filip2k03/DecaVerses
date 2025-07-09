@@ -4,9 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Joystick } from '@/components/Joystick';
 import { useGame } from '@/context/GameContext';
-import { Trophy, Pause, Play, RefreshCw } from 'lucide-react';
+import { Trophy, Pause, Play, RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const BOARD_SIZE = 20;
 const CELL_SIZE = 20; // in pixels
@@ -87,11 +86,9 @@ const Snake = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
   
-  const handleJoystickMove = (dir: 'up' | 'down' | 'left' | 'right' | 'center') => {
+  const handleMobileMove = (dir: 'up' | 'down' | 'left' | 'right') => {
       if (gameOver) return;
-      if (dir !== 'center') {
-          changeDirection(dir);
-      }
+      changeDirection(dir);
   }
 
   const gameLoop = useCallback(() => {
@@ -225,7 +222,27 @@ const Snake = () => {
             </div>
         )}
       </div>
-      {isMobile && !gameOver && <Joystick onMove={handleJoystickMove} />}
+      {isMobile && !gameOver && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48 md:hidden">
+            <div/>
+            <Button variant="outline" className="h-full w-full col-start-2" onTouchStart={(e) => { e.preventDefault(); handleMobileMove('up'); }}>
+                <ArrowUp />
+            </Button>
+            <div/>
+            <Button variant="outline" className="h-full w-full row-start-2" onTouchStart={(e) => { e.preventDefault(); handleMobileMove('left'); }}>
+                <ArrowLeft />
+            </Button>
+            <div/>
+            <Button variant="outline" className="h-full w-full row-start-2 col-start-3" onTouchStart={(e) => { e.preventDefault(); handleMobileMove('right'); }}>
+                <ArrowRight />
+            </Button>
+            <div/>
+            <Button variant="outline" className="h-full w-full col-start-2 row-start-3" onTouchStart={(e) => { e.preventDefault(); handleMobileMove('down'); }}>
+                <ArrowDown />
+            </Button>
+            <div/>
+        </div>
+      )}
     </div>
   );
 };

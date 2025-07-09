@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
-import { Trophy, Pause, Play, RefreshCw } from 'lucide-react';
+import { Trophy, Pause, Play, RefreshCw, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Joystick } from '@/components/Joystick';
 
@@ -109,11 +109,13 @@ export const DoodleJump = () => {
     };
   }, [handleKeyDown, handleKeyUp]);
   
-  const handleJoystickMove = (dir: 'left' | 'right' | 'center' | 'up' | 'down') => {
-      if(gameOver || isPaused || isFalling) return;
-      if(dir === 'left') setPlayer(p => ({...p, vx: -HORIZONTAL_SPEED}));
-      else if(dir === 'right') setPlayer(p => ({...p, vx: HORIZONTAL_SPEED}));
-      else setPlayer(p => ({...p, vx: 0}));
+  const handleMobileMoveStart = (dir: 'left' | 'right') => {
+    if(gameOver || isPaused || isFalling) return;
+    if(dir === 'left') setPlayer(p => ({...p, vx: -HORIZONTAL_SPEED}));
+    else if(dir === 'right') setPlayer(p => ({...p, vx: HORIZONTAL_SPEED}));
+  }
+  const handleMobileMoveEnd = () => {
+      setPlayer(p => ({...p, vx: 0}));
   }
 
   const gameLoop = useCallback(() => {
@@ -248,7 +250,26 @@ export const DoodleJump = () => {
         )}
         <p className="text-sm text-muted-foreground">Use Arrow Keys to move and P to pause.</p>
       </div>
-      {isMobile && !gameOver && <Joystick onMove={handleJoystickMove} />}
+      {isMobile && !gameOver && (
+        <div className="fixed bottom-24 z-50 w-full flex justify-between px-8 md:hidden">
+            <Button 
+                className="w-24 h-24 rounded-full"
+                variant="outline"
+                onTouchStart={() => handleMobileMoveStart('left')}
+                onTouchEnd={handleMobileMoveEnd}
+            >
+                <ArrowLeft className="h-10 w-10"/>
+            </Button>
+            <Button 
+                className="w-24 h-24 rounded-full"
+                variant="outline"
+                onTouchStart={() => handleMobileMoveStart('right')}
+                onTouchEnd={handleMobileMoveEnd}
+            >
+                <ArrowRight className="h-10 w-10"/>
+            </Button>
+        </div>
+      )}
     </div>
   );
 };

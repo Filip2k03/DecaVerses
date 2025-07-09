@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useGame } from '@/context/GameContext';
-import { Trophy, Zap, Heart } from 'lucide-react';
+import { Trophy, Zap, Heart, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Joystick } from '@/components/Joystick';
 
 const GAME_WIDTH = 600;
 const GAME_HEIGHT = 400;
@@ -86,12 +85,23 @@ export const DroidAnnihilator = () => {
         };
     }, [handleKeyDown, handleKeyUp]);
 
-    const handleJoystickMove = (dir: 'up' | 'down' | 'left' | 'right' | 'center') => {
-        let newVector = {x: 0, y: 0};
-        if(dir === 'up') newVector.y = -1;
-        if(dir === 'down') newVector.y = 1;
-        if(dir === 'left') newVector.x = -1;
-        if(dir === 'right') newVector.x = 1;
+    const handleMoveStart = (dir: 'up' | 'down' | 'left' | 'right') => {
+        const newVector = { ...moveVector.current };
+        if (dir === 'up') newVector.y = -1;
+        if (dir === 'down') newVector.y = 1;
+        if (dir === 'left') newVector.x = -1;
+        if (dir === 'right') newVector.x = 1;
+        moveVector.current = newVector;
+    };
+    
+    const handleMoveEnd = (dir: 'up' | 'down' | 'left' | 'right') => {
+        const newVector = { ...moveVector.current };
+        if ((dir === 'up' && newVector.y === -1) || (dir === 'down' && newVector.y === 1)) {
+            newVector.y = 0;
+        }
+        if ((dir === 'left' && newVector.x === -1) || (dir === 'right' && newVector.x === 1)) {
+            newVector.x = 0;
+        }
         moveVector.current = newVector;
     };
 
@@ -107,10 +117,16 @@ export const DroidAnnihilator = () => {
                 dx = moveVector.current.x;
                 dy = moveVector.current.y;
             } else {
-                if (keysPressed['ArrowUp'] || keysPressed['w']) dy = -1;
-                if (keysPressed['ArrowDown'] || keysPressed['s']) dy = 1;
-                if (keysPressed['ArrowLeft'] || keysPressed['a']) dx = -1;
-                if (keysPressed['ArrowRight'] || keysPressed['d']) dx = 1;
+                if (keysPressed['ArrowUp'] || keysPressed['w']) dy -= 1;
+                if (keysPressed['ArrowDown'] || keysPressed['s']) dy += 1;
+                if (keysPressed['ArrowLeft'] || keysPressed['a']) dx -= 1;
+                if (keysPressed['ArrowRight'] || keysPressed['d']) dx += 1;
+            }
+            
+            const magnitude = Math.sqrt(dx * dx + dy * dy);
+            if (magnitude > 0) {
+                dx = (dx / magnitude);
+                dy = (dy / magnitude);
             }
 
             const newX = Math.max(0, Math.min(p.x + dx * PLAYER_SPEED, GAME_WIDTH - PLAYER_SIZE));
@@ -148,7 +164,7 @@ export const DroidAnnihilator = () => {
         const enemiesToRemove = new Set<number>();
 
         bullets.forEach((bullet, bIndex) => {
-            enemies.forEach((enemy, eIndex) => {
+            enemies.forEach((enemy) => {
                 if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < (BULLET_SIZE + ENEMY_SIZE) / 2) {
                     bulletsToRemove.add(bIndex);
                     enemiesToRemove.add(enemy.id);
@@ -208,8 +224,18 @@ export const DroidAnnihilator = () => {
             </div>
             {isMobile && gameState === 'playing' && (
                 <>
-                    <Joystick onMove={handleJoystickMove} />
-                    <Button onClick={handleShoot} className="fixed bottom-8 right-8 z-50 h-20 w-20 rounded-full"><Zap className="w-8 h-8"/></Button>
+                    <div className="fixed bottom-24 left-8 z-50 grid grid-cols-3 grid-rows-3 gap-2 w-40 h-40 md:hidden">
+                        <div />
+                        <Button variant="outline" className="h-full w-full col-start-2" onTouchStart={(e)=>{e.preventDefault(); handleMoveStart('up')}} onTouchEnd={()=>handleMoveEnd('up')}><ArrowUp /></Button>
+                        <div />
+                        <Button variant="outline" className="h-full w-full row-start-2" onTouchStart={(e)=>{e.preventDefault(); handleMoveStart('left')}} onTouchEnd={()=>handleMoveEnd('left')}><ArrowLeft /></Button>
+                        <div/>
+                        <Button variant="outline" className="h-full w-full row-start-2 col-start-3" onTouchStart={(e)=>{e.preventDefault(); handleMoveStart('right')}} onTouchEnd={()=>handleMoveEnd('right')}><ArrowRight /></Button>
+                        <div />
+                        <Button variant="outline" className="h-full w-full col-start-2 row-start-3" onTouchStart={(e)=>{e.preventDefault(); handleMoveStart('down')}} onTouchEnd={()=>handleMoveEnd('down')}><ArrowDown /></Button>
+                        <div />
+                    </div>
+                    <Button onClick={handleShoot} className="fixed bottom-28 right-8 z-50 h-24 w-24 rounded-full"><Zap className="w-10 h-10"/></Button>
                 </>
             )}
              <p className="text-sm text-muted-foreground hidden md:block">Use WASD/Arrows to move, Space to shoot.</p>

@@ -3,9 +3,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Joystick } from '@/components/Joystick';
 import { useGame } from '@/context/GameContext';
-import { Trophy, Pause, Play, RefreshCw } from 'lucide-react';
+import { Trophy, Pause, Play, RefreshCw, ArrowUp, ArrowLeft, ArrowDown, ArrowRight } from 'lucide-react';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
@@ -58,7 +57,7 @@ export function BlockStacker() {
   const [isPaused, setIsPaused] = useState(false);
   const isMobile = useIsMobile();
   const lastMoveTime = useRef(0);
-  const moveDebounce = 150; // ms for joystick move repeat rate
+  const moveDebounce = 200; // ms for joystick move repeat rate
 
   const { scores, updateScore } = useGame();
   const highScore = scores[8] || 0;
@@ -179,19 +178,14 @@ export function BlockStacker() {
       }
     }, [handleControl]);
 
-    const handleJoystickMove = (dir: 'up' | 'down' | 'left' | 'right' | 'center') => {
-        if (dir === 'center' || isPaused || gameOver) return;
+    const handleMobileControl = (action: 'rotate' | 'down' | 'left' | 'right') => {
+        if (isPaused || gameOver) return;
         
         const now = Date.now();
         if (now - lastMoveTime.current < moveDebounce) return;
         lastMoveTime.current = now;
 
-        switch(dir) {
-            case 'up': handleControl('rotate'); break;
-            case 'down': handleControl('down'); break;
-            case 'left': handleControl('left'); break;
-            case 'right': handleControl('right'); break;
-        }
+        handleControl(action);
     };
 
   useEffect(() => {
@@ -297,7 +291,22 @@ export function BlockStacker() {
           <p>'P' to pause</p>
         </div>
       </div>
-      {isMobile && !gameOver && !isPaused && <Joystick onMove={handleJoystickMove} />}
+      {isMobile && !gameOver && !isPaused && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 grid grid-cols-3 grid-rows-2 gap-2 w-48 h-32 md:hidden">
+            <Button variant="outline" className="col-start-2 h-full w-full" onTouchStart={(e) => { e.preventDefault(); handleMobileControl('rotate'); }}>
+                <ArrowUp />
+            </Button>
+            <Button variant="outline" className="row-start-2 h-full w-full" onTouchStart={(e) => { e.preventDefault(); handleMobileControl('left'); }}>
+                <ArrowLeft />
+            </Button>
+            <Button variant="outline" className="row-start-2 col-start-2 h-full w-full" onTouchStart={(e) => { e.preventDefault(); handleMobileControl('down'); }}>
+                <ArrowDown />
+            </Button>
+            <Button variant="outline" className="row-start-2 col-start-3 h-full w-full" onTouchStart={(e) => { e.preventDefault(); handleMobileControl('right'); }}>
+                <ArrowRight />
+            </Button>
+        </div>
+      )}
     </div>
   );
 }
