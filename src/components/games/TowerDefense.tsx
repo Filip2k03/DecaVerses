@@ -51,6 +51,7 @@ export const TowerDefense = () => {
     const [currency, setCurrency] = useState(125);
     const [health, setHealth] = useState(20);
     const [selectedTower, setSelectedTower] = useState<TowerType | null>(null);
+    const [gameSpeed, setGameSpeed] = useState(1);
 
     const gameLoopRef = useRef<number>();
     const pathRef = useRef<SVGPathElement>(null);
@@ -75,6 +76,7 @@ export const TowerDefense = () => {
         setCurrency(125);
         setHealth(20);
         setSelectedTower(null);
+        setGameSpeed(1);
         setGameState('playing');
         startNextWave(0);
     }, [startNextWave]);
@@ -94,11 +96,11 @@ export const TowerDefense = () => {
                     clearInterval(spawnInterval);
                     setWaveSpawning(false);
                 }
-            }, 500);
+            }, 500 / gameSpeed);
 
             return () => clearInterval(spawnInterval);
         }
-    }, [waveSpawning, wave]);
+    }, [waveSpawning, wave, gameSpeed]);
     
     const handleGridClick = (x: number, y: number) => {
         if (!selectedTower) return;
@@ -114,27 +116,30 @@ export const TowerDefense = () => {
     };
     
     const gameLoop = useCallback(() => {
-        if (gameState !== 'playing' || !pathRef.current) return;
+        if (gameState !== 'playing' || !pathRef.current) {
+            gameLoopRef.current = requestAnimationFrame(gameLoop);
+            return;
+        }
 
-        let currentTowers = [...towers];
-        let currentEnemies = [...enemies];
-        let currentProjectiles = [...projectiles];
-        let currentHealth = health;
-        let currentCurrency = currency;
+        let tempTowers = [...towers];
+        let tempEnemies = [...enemies];
+        let tempProjectiles = [...projectiles];
+        let tempHealth = health;
+        let tempCurrency = currency;
         
         const now = Date.now();
 
         // --- 1. Tower Firing ---
         const newProjectiles: Projectile[] = [];
-        currentTowers = currentTowers.map(tower => {
-            if (now - tower.lastFired > tower.fireRate) {
+        tempTowers = tempTowers.map(tower => {
+            if (now - tower.lastFired > tower.fireRate / gameSpeed) {
                 const towerCenterX = tower.x * CELL_SIZE + CELL_SIZE / 2;
                 const towerCenterY = tower.y * CELL_SIZE + CELL_SIZE / 2;
                 
                 let bestTarget: Enemy | null = null;
                 let maxProgress = -1;
 
-                currentEnemies.forEach(enemy => {
+                tempEnemies.forEach(enemy => {
                     const enemyCoords = pathRef.current!.getPointAtLength(enemy.pathProgress);
                     const dist = Math.hypot(enemyCoords.x - towerCenterX, enemyCoords.y - towerCenterY);
                     if (dist < tower.range * CELL_SIZE && enemy.pathProgress > maxProgress) {
@@ -151,13 +156,13 @@ export const TowerDefense = () => {
             return tower;
         });
         
-        currentProjectiles.push(...newProjectiles);
+        tempProjectiles.push(...newProjectiles);
 
         // --- 2. Enemy Movement ---
         const enemiesReachedEnd = new Set<number>();
-        currentEnemies = currentEnemies.map(enemy => {
+        tempEnemies = tempEnemies.map(enemy => {
             const speedMultiplier = now < enemy.slowUntil ? 0.5 : 1;
-            const newPathProgress = enemy.pathProgress + (enemy.speed * speedMultiplier);
+            const newPathProgress = enemy.pathProgress + (enemy.speed * speedMultiplier * gameSpeed);
             if (newPathProgress >= pathLength.current) {
                 enemiesReachedEnd.add(enemy.id);
                 return null;
@@ -166,15 +171,15 @@ export const TowerDefense = () => {
         }).filter(Boolean) as Enemy[];
 
         if (enemiesReachedEnd.size > 0) {
-            currentHealth -= enemiesReachedEnd.size;
+            tempHealth -= enemiesReachedEnd.size;
         }
 
         // --- 3. Projectile Movement and Collision ---
         const projectilesToRemove = new Set<number>();
         const enemiesToDamage = new Map<number, { damage: number, type: TowerType }[]>();
 
-        currentProjectiles = currentProjectiles.map(proj => {
-            const target = currentEnemies.find(e => e.id === proj.targetId);
+        tempProjectiles = tempProjectiles.map(proj => {
+            const target = tempEnemies.find(e => e.id === proj.targetId);
             if (!target) {
                 projectilesToRemove.add(proj.id);
                 return proj;
@@ -185,13 +190,13 @@ export const TowerDefense = () => {
             const dy = targetCoords.y - proj.y;
             const dist = Math.hypot(dx, dy);
             
-            if (dist < PROJECTILE_SPEED) {
+            if (dist < PROJECTILE_SPEED * gameSpeed) {
                 projectilesToRemove.add(proj.id);
                 if (!enemiesToDamage.has(target.id)) enemiesToDamage.set(target.id, []);
                 enemiesToDamage.get(target.id)!.push({ damage: TOWER_SPECS[proj.type].damage, type: proj.type });
 
                 if (proj.type === 'fire') {
-                    currentEnemies.forEach(otherEnemy => {
+                    tempEnemies.forEach(otherEnemy => {
                         if (otherEnemy.id === target.id) return;
                         const otherCoords = pathRef.current!.getPointAtLength(otherEnemy.pathProgress);
                         if (Math.hypot(otherCoords.x - targetCoords.x, otherCoords.y - targetCoords.y) < SPLASH_RADIUS) {
@@ -202,13 +207,15 @@ export const TowerDefense = () => {
                 }
                 return proj;
             }
-            return { ...proj, x: proj.x + (dx / dist) * PROJECTILE_SPEED, y: proj.y + (dy / dist) * PROJECTILE_SPEED };
+            const moveX = (dx / dist) * PROJECTILE_SPEED * gameSpeed;
+            const moveY = (dy / dist) * PROJECTILE_SPEED * gameSpeed;
+            return { ...proj, x: proj.x + moveX, y: proj.y + moveY };
         });
 
         // --- 4. Apply Damage & Effects ---
         const defeatedEnemyIds = new Set<number>();
         if (enemiesToDamage.size > 0) {
-            currentEnemies = currentEnemies.map(enemy => {
+            tempEnemies = tempEnemies.map(enemy => {
                 if (enemiesToDamage.has(enemy.id)) {
                     let newHealth = enemy.health;
                     let newSlowUntil = enemy.slowUntil;
@@ -227,25 +234,25 @@ export const TowerDefense = () => {
             }).filter(Boolean) as Enemy[];
         }
         
-        if (defeatedEnemyIds.size > 0) currentCurrency += defeatedEnemyIds.size * 5;
+        if (defeatedEnemyIds.size > 0) tempCurrency += defeatedEnemyIds.size * 5;
         
         // --- 5. Update State ---
-        setTowers(currentTowers);
-        setEnemies(currentEnemies.filter(e => !defeatedEnemyIds.has(e.id)));
-        setProjectiles(currentProjectiles.filter(p => !projectilesToRemove.has(p.id)));
-        setHealth(currentHealth);
-        setCurrency(currentCurrency);
+        setTowers(tempTowers);
+        setEnemies(tempEnemies.filter(e => !defeatedEnemyIds.has(e.id)));
+        setProjectiles(tempProjectiles.filter(p => !projectilesToRemove.has(p.id)));
+        setHealth(tempHealth);
+        setCurrency(tempCurrency);
 
         // --- 6. Game State Checks ---
-        if (currentHealth <= 0) {
+        if (tempHealth <= 0) {
             setGameState('gameover');
             updateScore(21, score);
-        } else if (currentEnemies.length === 0 && !waveSpawning) {
+        } else if (tempEnemies.length === 0 && !waveSpawning) {
             setGameState('wave_over');
         }
 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
-    }, [towers, enemies, projectiles, health, currency, gameState, waveSpawning, score, updateScore]);
+    }, [towers, enemies, projectiles, health, currency, gameState, waveSpawning, gameSpeed, score, updateScore]);
 
     useEffect(() => {
         if(pathRef.current) pathLength.current = pathRef.current.getTotalLength();
@@ -274,13 +281,21 @@ export const TowerDefense = () => {
     return (
         <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
             <div className="relative bg-gray-900 border-2 border-primary/50 overflow-hidden" style={{ width: GRID_SIZE * CELL_SIZE, height: GRID_SIZE * CELL_SIZE, boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 15px hsl(var(--primary)/0.3)'}}>
-                 {(gameState === 'start' || gameState === 'gameover') && (
+                 {(gameState === 'start' || gameState === 'gameover' || (gameState === 'wave_over' && !waveSpawning)) && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 text-white gap-4 text-center p-4">
-                        <h2 className="text-4xl font-bold font-headline">{gameState === 'gameover' ? 'Core Integrity Failure' : 'Tower Defense 2077'}</h2>
-                        {gameState === 'gameover' && <p>You survived until wave {wave}. Final Score: {score}</p>}
-                        <Button onClick={resetGame} size="lg" className="mt-4">
-                            {gameState === 'gameover' ? 'Re-initialize' : 'Start Defense'}
-                        </Button>
+                        {gameState === 'start' && <>
+                            <h2 className="text-4xl font-bold font-headline">Tower Defense 2077</h2>
+                            <Button onClick={resetGame} size="lg" className="mt-4">Start Defense</Button>
+                        </>}
+                        {gameState === 'gameover' && <>
+                            <h2 className="text-4xl font-bold font-headline">You Lost!</h2>
+                            <p>You were defeated on wave {wave}. Final Score: {score}</p>
+                            <Button onClick={resetGame} size="lg" className="mt-4">Re-initialize</Button>
+                        </>}
+                        {gameState === 'wave_over' && !waveSpawning && <>
+                            <h2 className="text-3xl font-bold font-headline">Wave {wave} Complete!</h2>
+                             <Button onClick={() => startNextWave(wave)} size="lg">Start Wave {wave + 1}</Button>
+                        </>}
                     </div>
                 )}
                 <svg width="100%" height="100%" className="absolute inset-0 pointer-events-none">
@@ -330,11 +345,22 @@ export const TowerDefense = () => {
                     <p className="text-2xl font-mono">{highScore}</p>
                 </div>
                 
-                {gameState === 'wave_over' && !waveSpawning && (
-                    <Button onClick={() => startNextWave(wave)} className="w-full" size="lg">
-                        Start Wave {wave + 1}
-                    </Button>
-                )}
+                 <div className="p-4 bg-muted/80 rounded-lg text-center">
+                    <h3 className="text-lg font-bold mb-2">Game Speed</h3>
+                    <div className="flex justify-center gap-1">
+                        {[1, 2, 4, 8].map(speed => (
+                            <Button
+                                key={speed}
+                                size="sm"
+                                variant={gameSpeed === speed ? 'default' : 'outline'}
+                                onClick={() => setGameSpeed(speed)}
+                                disabled={gameState === 'gameover'}
+                            >
+                                {speed}x
+                            </Button>
+                        ))}
+                    </div>
+                </div>
 
                  <div className={cn("p-4 bg-muted/80 rounded-lg", gameState !== 'wave_over' && gameState !== 'playing' && 'opacity-50')}>
                     <h3 className="text-lg font-bold text-center mb-2">Build Defenses</h3>
