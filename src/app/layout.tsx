@@ -29,9 +29,12 @@ export default function RootLayout({
             <GameProvider>
               <div className="flex min-h-screen w-full flex-col">
                 <Header />
-                <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 mb-16 md:mb-0">
+                <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
                   {children}
                 </main>
+                <footer className="w-full p-4 text-center text-sm text-muted-foreground mb-16 md:mb-4">
+                  <p>Developed by <a href="https://techyyfilip.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Filip</a> & <a href="https://thuyakyaw.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Thuyakyaw</a>.</p>
+                </footer>
               </div>
               <Toaster />
               <BackgroundMusic />
