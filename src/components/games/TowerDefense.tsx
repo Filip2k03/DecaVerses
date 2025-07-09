@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 const GRID_SIZE = 15;
 const CELL_SIZE = 32;
 const ENEMY_BASE_SPEED = 0.5;
+const PROJECTILE_SPEED = 5;
 
 const PATH_COORDS = [[0, 7], [1, 7], [2, 7], [2, 6], [2, 5], [2, 4], [3, 4], [4, 4], [5, 4], [5, 5], [5, 6], [6, 6], [7, 6], [7, 5], [7, 4], [7, 3], [7, 2], [8, 2], [9, 2], [10, 2], [10, 3], [10, 4], [10, 5], [10, 6], [10, 7], [10, 8], [10, 9], [11, 9], [12, 9], [12, 8], [12, 7], [12, 6], [13, 6], [14, 6]];
 const SVG_PATH = PATH_COORDS.map((p, i) => (i === 0 ? 'M' : 'L') + ` ${p[0] * CELL_SIZE + CELL_SIZE/2} ${p[1] * CELL_SIZE + CELL_SIZE/2}`).join(' ');
@@ -17,7 +18,7 @@ const SVG_PATH = PATH_COORDS.map((p, i) => (i === 0 ? 'M' : 'L') + ` ${p[0] * CE
 type TowerType = 'laser' | 'fire' | 'ice';
 type Tower = { id: number; x: number; y: number; type: TowerType; range: number; damage: number; fireRate: number; lastFired: number; };
 type Enemy = { id: number; pathProgress: number; maxHealth: number; health: number; speed: number; slowUntil: number; };
-type Projectile = { id: number; from: { x: number, y: number }; to: { x: number, y: number }; type: TowerType };
+type Projectile = { id: number; x: number; y: number; targetId: number; type: TowerType };
 type GameState = 'start' | 'playing' | 'wave_over' | 'gameover';
 
 const TOWER_SPECS: Record<TowerType, { name: string; cost: number; range: number; damage: number; fireRate: number; icon: React.FC<any> }> = {
@@ -28,7 +29,6 @@ const TOWER_SPECS: Record<TowerType, { name: string; cost: number; range: number
 const SPLASH_RADIUS = 1.5 * CELL_SIZE;
 const SLOW_DURATION = 2000; // ms
 
-// Component for rendering an enemy
 const EnemySprite = ({ health, maxHealth }: { health: number, maxHealth: number}) => {
     const healthPercentage = (health / maxHealth) * 100;
     return (
@@ -60,6 +60,13 @@ export const TowerDefense = () => {
     const { scores, updateScore } = useGame();
     const highScore = scores[21] || 0;
 
+    const startNextWave = useCallback((currentWave: number) => {
+        if(gameState === 'gameover') return;
+        setGameState('playing');
+        setWave(currentWave + 1);
+        setWaveSpawning(true);
+    }, [gameState]);
+
     const resetGame = useCallback(() => {
         setTowers([]);
         setEnemies([]);
@@ -69,15 +76,9 @@ export const TowerDefense = () => {
         setHealth(20);
         setSelectedTower(null);
         setGameState('playing');
-        startNextWave(0); // Start with wave 0 which will become wave 1
-    }, []);
+        startNextWave(0);
+    }, [startNextWave]);
 
-    const startNextWave = useCallback((currentWave: number) => {
-        if(gameState === 'gameover') return;
-        setGameState('playing');
-        setWave(currentWave + 1);
-        setWaveSpawning(true);
-    }, [gameState]);
 
     useEffect(() => {
         if (waveSpawning && wave > 0) {
@@ -111,15 +112,21 @@ export const TowerDefense = () => {
             setTowers(t => [...t, { id: Date.now(), x, y, type: selectedTower, ...spec, lastFired: 0 }]);
         }
     };
-
+    
     const gameLoop = useCallback(() => {
         if (gameState !== 'playing' || !pathRef.current) return;
 
+        let currentTowers = [...towers];
+        let currentEnemies = [...enemies];
+        let currentProjectiles = [...projectiles];
+        let currentHealth = health;
+        let currentCurrency = currency;
+        
         const now = Date.now();
-        const newProjectiles: Projectile[] = [];
 
-        // Tower Firing
-        setTowers(currentTowers => currentTowers.map(tower => {
+        // --- 1. Tower Firing ---
+        const newProjectiles: Projectile[] = [];
+        currentTowers = currentTowers.map(tower => {
             if (now - tower.lastFired > tower.fireRate) {
                 const towerCenterX = tower.x * CELL_SIZE + CELL_SIZE / 2;
                 const towerCenterY = tower.y * CELL_SIZE + CELL_SIZE / 2;
@@ -127,107 +134,118 @@ export const TowerDefense = () => {
                 let bestTarget: Enemy | null = null;
                 let maxProgress = -1;
 
-                enemies.forEach(enemy => {
-                    const enemyCoords = pathRef.current?.getPointAtLength(enemy.pathProgress);
-                    if (enemyCoords) {
-                        const dist = Math.hypot(enemyCoords.x - towerCenterX, enemyCoords.y - towerCenterY);
-                        if (dist < tower.range * CELL_SIZE && enemy.pathProgress > maxProgress) {
-                            maxProgress = enemy.pathProgress;
-                            bestTarget = enemy;
-                        }
+                currentEnemies.forEach(enemy => {
+                    const enemyCoords = pathRef.current!.getPointAtLength(enemy.pathProgress);
+                    const dist = Math.hypot(enemyCoords.x - towerCenterX, enemyCoords.y - towerCenterY);
+                    if (dist < tower.range * CELL_SIZE && enemy.pathProgress > maxProgress) {
+                        maxProgress = enemy.pathProgress;
+                        bestTarget = enemy;
                     }
                 });
 
                 if (bestTarget) {
-                    const targetCoords = pathRef.current?.getPointAtLength(bestTarget.pathProgress);
-                    if (targetCoords) {
-                        newProjectiles.push({
-                            id: Date.now() + Math.random(),
-                            from: { x: towerCenterX, y: towerCenterY },
-                            to: { x: targetCoords.x, y: targetCoords.y },
-                            type: tower.type,
-                        });
-                        return { ...tower, lastFired: now };
-                    }
+                    newProjectiles.push({ id: Date.now() + Math.random(), x: towerCenterX, y: towerCenterY, targetId: bestTarget.id, type: tower.type });
+                    return { ...tower, lastFired: now };
                 }
             }
             return tower;
-        }));
+        });
         
-        if (newProjectiles.length > 0) {
-            setProjectiles(p => [...p, ...newProjectiles]);
-            setTimeout(() => {
-                setProjectiles(current => current.filter(p => !newProjectiles.find(np => np.id === p.id)));
-            }, 100);
-            
-            // Apply projectile effects immediately
-            setEnemies(currentEnemies => {
-                let enemiesToUpdate = [...currentEnemies];
-                newProjectiles.forEach(proj => {
-                    if (!pathRef.current) return;
-                    const towerSpec = TOWER_SPECS[proj.type];
-                    const target = enemies.sort((a,b) => b.pathProgress - a.pathProgress).find(e => {
-                        const eCoords = pathRef.current!.getPointAtLength(e.pathProgress);
-                        return Math.hypot(eCoords.x - proj.to.x, eCoords.y - proj.to.y) < CELL_SIZE;
-                    });
+        currentProjectiles.push(...newProjectiles);
 
-                    if (target) {
-                        if (proj.type === 'laser') {
-                             enemiesToUpdate = enemiesToUpdate.map(e => e.id === target.id ? {...e, health: e.health - towerSpec.damage} : e);
-                        } else if (proj.type === 'fire') {
-                            enemiesToUpdate.forEach((enemy, index) => {
-                                const enemyCoords = pathRef.current!.getPointAtLength(enemy.pathProgress);
-                                if (Math.hypot(enemyCoords.x - proj.to.x, enemyCoords.y - proj.to.y) < SPLASH_RADIUS) {
-                                    enemiesToUpdate[index] = {...enemy, health: enemy.health - towerSpec.damage};
-                                }
-                            });
-                        } else if (proj.type === 'ice') {
-                            enemiesToUpdate = enemiesToUpdate.map(e => e.id === target.id ? {...e, health: e.health - towerSpec.damage, slowUntil: now + SLOW_DURATION} : e);
-                        }
-                    }
-                });
-                return enemiesToUpdate;
-            });
-        }
-
-        // Enemy Logic
-        const enemiesEscaped: number[] = [];
-        const enemiesDefeated: number[] = [];
-        
-        const updatedEnemies = enemies.map(enemy => {
-            if (enemy.health <= 0) {
-                enemiesDefeated.push(enemy.id);
-                return null;
-            }
+        // --- 2. Enemy Movement ---
+        const enemiesReachedEnd = new Set<number>();
+        currentEnemies = currentEnemies.map(enemy => {
             const speedMultiplier = now < enemy.slowUntil ? 0.5 : 1;
             const newPathProgress = enemy.pathProgress + (enemy.speed * speedMultiplier);
-
             if (newPathProgress >= pathLength.current) {
-                enemiesEscaped.push(enemy.id);
+                enemiesReachedEnd.add(enemy.id);
                 return null;
             }
             return { ...enemy, pathProgress: newPathProgress };
-        }).filter((e): e is Enemy => e !== null);
+        }).filter(Boolean) as Enemy[];
 
-        setEnemies(updatedEnemies);
-        
-        if (enemiesEscaped.length > 0) {
-            setHealth(h => Math.max(0, h - enemiesEscaped.length));
+        if (enemiesReachedEnd.size > 0) {
+            currentHealth -= enemiesReachedEnd.size;
         }
-        if (enemiesDefeated.length > 0) {
-            setCurrency(c => c + enemiesDefeated.length * 5);
+
+        // --- 3. Projectile Movement and Collision ---
+        const projectilesToRemove = new Set<number>();
+        const enemiesToDamage = new Map<number, { damage: number, type: TowerType }[]>();
+
+        currentProjectiles = currentProjectiles.map(proj => {
+            const target = currentEnemies.find(e => e.id === proj.targetId);
+            if (!target) {
+                projectilesToRemove.add(proj.id);
+                return proj;
+            }
+
+            const targetCoords = pathRef.current!.getPointAtLength(target.pathProgress);
+            const dx = targetCoords.x - proj.x;
+            const dy = targetCoords.y - proj.y;
+            const dist = Math.hypot(dx, dy);
+            
+            if (dist < PROJECTILE_SPEED) {
+                projectilesToRemove.add(proj.id);
+                if (!enemiesToDamage.has(target.id)) enemiesToDamage.set(target.id, []);
+                enemiesToDamage.get(target.id)!.push({ damage: TOWER_SPECS[proj.type].damage, type: proj.type });
+
+                if (proj.type === 'fire') {
+                    currentEnemies.forEach(otherEnemy => {
+                        if (otherEnemy.id === target.id) return;
+                        const otherCoords = pathRef.current!.getPointAtLength(otherEnemy.pathProgress);
+                        if (Math.hypot(otherCoords.x - targetCoords.x, otherCoords.y - targetCoords.y) < SPLASH_RADIUS) {
+                            if (!enemiesToDamage.has(otherEnemy.id)) enemiesToDamage.set(otherEnemy.id, []);
+                            enemiesToDamage.get(otherEnemy.id)!.push({ damage: TOWER_SPECS.fire.damage, type: 'fire' });
+                        }
+                    });
+                }
+                return proj;
+            }
+            return { ...proj, x: proj.x + (dx / dist) * PROJECTILE_SPEED, y: proj.y + (dy / dist) * PROJECTILE_SPEED };
+        });
+
+        // --- 4. Apply Damage & Effects ---
+        const defeatedEnemyIds = new Set<number>();
+        if (enemiesToDamage.size > 0) {
+            currentEnemies = currentEnemies.map(enemy => {
+                if (enemiesToDamage.has(enemy.id)) {
+                    let newHealth = enemy.health;
+                    let newSlowUntil = enemy.slowUntil;
+                    enemiesToDamage.get(enemy.id)!.forEach(d => {
+                        newHealth -= d.damage;
+                        if (d.type === 'ice') newSlowUntil = now + SLOW_DURATION;
+                    });
+
+                    if (newHealth <= 0) {
+                        defeatedEnemyIds.add(enemy.id);
+                        return null;
+                    }
+                    return { ...enemy, health: newHealth, slowUntil: newSlowUntil };
+                }
+                return enemy;
+            }).filter(Boolean) as Enemy[];
         }
         
-        // State checks
-        if (health - enemiesEscaped.length <= 0) {
+        if (defeatedEnemyIds.size > 0) currentCurrency += defeatedEnemyIds.size * 5;
+        
+        // --- 5. Update State ---
+        setTowers(currentTowers);
+        setEnemies(currentEnemies.filter(e => !defeatedEnemyIds.has(e.id)));
+        setProjectiles(currentProjectiles.filter(p => !projectilesToRemove.has(p.id)));
+        setHealth(currentHealth);
+        setCurrency(currentCurrency);
+
+        // --- 6. Game State Checks ---
+        if (currentHealth <= 0) {
             setGameState('gameover');
             updateScore(21, score);
-        } else if (updatedEnemies.length === 0 && !waveSpawning) {
+        } else if (currentEnemies.length === 0 && !waveSpawning) {
             setGameState('wave_over');
         }
 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
-    }, [gameState, enemies, waveSpawning, health, score, updateScore]);
+    }, [towers, enemies, projectiles, health, currency, gameState, waveSpawning, score, updateScore]);
 
     useEffect(() => {
         if(pathRef.current) pathLength.current = pathRef.current.getTotalLength();
@@ -249,7 +267,8 @@ export const TowerDefense = () => {
 
     const ProjectileComponent = ({ projectile }: { projectile: Projectile }) => {
         const color = projectile.type === 'laser' ? 'hsl(var(--primary))' : projectile.type === 'fire' ? 'hsl(var(--destructive))' : '#3b82f6';
-        return <line x1={projectile.from.x} y1={projectile.from.y} x2={projectile.to.x} y2={projectile.to.y} stroke={color} strokeWidth="2" style={{filter: `drop-shadow(0 0 4px ${color})`}}/>
+        const size = projectile.type === 'fire' ? 8 : 5;
+        return <circle cx={projectile.x} cy={projectile.y} r={size/2} fill={color} style={{filter: `drop-shadow(0 0 4px ${color})`}}/>;
     };
     
     return (
