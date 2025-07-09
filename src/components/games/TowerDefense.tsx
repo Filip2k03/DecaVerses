@@ -95,7 +95,6 @@ export const TowerDefense = () => {
         });
         observer.observe(container);
 
-        // Initial size set
         setCellSize(container.offsetWidth / GRID_SIZE);
 
         return () => {
@@ -403,10 +402,10 @@ export const TowerDefense = () => {
     };
     
     return (
-        <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 w-full">
+        <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
             <div 
                 ref={gameContainerRef}
-                className="relative w-full aspect-square max-w-md lg:w-auto lg:h-full lg:max-w-[480px] bg-gray-900 border-2 border-primary/50 overflow-hidden" 
+                className="relative w-full aspect-square bg-gray-900 border-2 border-primary/50 overflow-hidden lg:col-span-2"
                 style={{boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 15px hsl(var(--primary)/0.3)'}}
             >
                  {(gameState === 'start' || gameState === 'gameover' || (gameState === 'wave_over' && !waveSpawning)) && (
@@ -445,7 +444,7 @@ export const TowerDefense = () => {
                 
                 {enemies.map(enemy => <EnemyComponent key={enemy.id} enemy={enemy} />)}
             </div>
-             <div className="w-full lg:w-64 space-y-4">
+             <div className="w-full lg:col-span-1 space-y-4">
                 <div className="p-4 bg-muted/80 rounded-lg text-center">
                     <h3 className="text-lg font-bold">Wave</h3>
                     <p className="text-2xl font-mono">{wave}</p>
