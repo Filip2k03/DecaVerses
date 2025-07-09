@@ -53,7 +53,7 @@ export const QuantumBreakout = () => {
         newBricks.push({
           x: c * (BRICK_WIDTH + 10) + 25,
           y: r * (BRICK_HEIGHT + 10) + 30,
-          health: currentLevel,
+          health: 1, // Always 1 for one-hit destruction
           color: BRICK_COLORS[r % BRICK_COLORS.length],
         });
       }
@@ -135,7 +135,7 @@ export const QuantumBreakout = () => {
             for (const brick of newBricks) {
                 if (brick.health > 0 && x + BALL_SIZE > brick.x && x < brick.x + BRICK_WIDTH && y + BALL_SIZE > brick.y && y < brick.y + BRICK_HEIGHT) {
                     hit = true;
-                    brick.health -= 1;
+                    brick.health = 0; // Destroy brick in one hit
                     setScore(s => s + 10 * level);
                     break; // one hit per frame
                 }
@@ -222,7 +222,7 @@ export const QuantumBreakout = () => {
                 backgroundColor: brick.color,
                 borderColor: `color-mix(in srgb, ${brick.color}, #000 30%)`,
                 boxShadow: `0 0 8px ${brick.color}`,
-                opacity: brick.health / level,
+                opacity: 1,
             }} />
         ))}
       </div>
