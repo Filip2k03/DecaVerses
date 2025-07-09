@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -9,142 +10,246 @@ import { TowerDefenseIcon } from '../GameIcons';
 
 const GRID_SIZE = 15;
 const CELL_SIZE = 32;
-const PATH = [[0, 7], [1, 7], [2, 7], [2, 6], [2, 5], [2, 4], [3, 4], [4, 4], [5, 4], [5, 5], [5, 6], [6, 6], [7, 6], [7, 5], [7, 4], [7, 3], [7, 2], [8, 2], [9, 2], [10, 2], [10, 3], [10, 4], [10, 5], [10, 6], [10, 7], [10, 8], [10, 9], [11, 9], [12, 9], [12, 8], [12, 7], [12, 6], [13, 6], [14, 6]];
+const ENEMY_SPEED = 0.5;
 
-type Tower = { x: number; y: number; range: number; fireRate: number; lastFired: number; };
-type Enemy = { id: number; pathIndex: number; x: number; y: number; health: number; };
-type GameState = 'start' | 'playing' | 'gameover';
+const PATH_COORDS = [[0, 7], [1, 7], [2, 7], [2, 6], [2, 5], [2, 4], [3, 4], [4, 4], [5, 4], [5, 5], [5, 6], [6, 6], [7, 6], [7, 5], [7, 4], [7, 3], [7, 2], [8, 2], [9, 2], [10, 2], [10, 3], [10, 4], [10, 5], [10, 6], [10, 7], [10, 8], [10, 9], [11, 9], [12, 9], [12, 8], [12, 7], [12, 6], [13, 6], [14, 6]];
+const SVG_PATH = PATH_COORDS.map((p, i) => (i === 0 ? 'M' : 'L') + ` ${p[0] * CELL_SIZE + CELL_SIZE/2} ${p[1] * CELL_SIZE + CELL_SIZE/2}`).join(' ');
+
+type TowerType = 'laser';
+type Tower = { id: number; x: number; y: number; type: TowerType; range: number; damage: number; fireRate: number; lastFired: number; };
+type Enemy = { id: number; pathProgress: number; maxHealth: number; health: number; };
+type Projectile = { id: number; from: { x: number, y: number }; to: { x: number, y: number }; };
+type GameState = 'start' | 'playing' | 'wave_over' | 'gameover';
+
+const TOWER_SPECS: Record<TowerType, { cost: number; range: number; damage: number; fireRate: number; }> = {
+    laser: { cost: 50, range: 3, damage: 25, fireRate: 1000 },
+};
 
 export const TowerDefense = () => {
     const [towers, setTowers] = useState<Tower[]>([]);
     const [enemies, setEnemies] = useState<Enemy[]>([]);
+    const [projectiles, setProjectiles] = useState<Projectile[]>([]);
     const [gameState, setGameState] = useState<GameState>('start');
     const [wave, setWave] = useState(0);
+    const [waveSpawning, setWaveSpawning] = useState(false);
     const [currency, setCurrency] = useState(100);
     const [health, setHealth] = useState(20);
-    const [selectedTower, setSelectedTower] = useState<'laser' | null>('laser');
-
-    const { scores, updateScore } = useGame();
-    const highScore = scores[21] || 0;
-    const score = useMemo(() => wave * 100, [wave]);
+    const [selectedTower, setSelectedTower] = useState<TowerType | null>('laser');
 
     const gameLoopRef = useRef<number>();
+    const pathRef = useRef<SVGPathElement>(null);
+    const pathLength = useRef(0);
 
-    const startGame = () => {
+    const score = useMemo(() => Math.max(0, (wave -1) * 100), [wave]);
+    const { scores, updateScore } = useGame();
+    const highScore = scores[21] || 0;
+
+    const resetGame = () => {
         setTowers([]);
         setEnemies([]);
+        setProjectiles([]);
         setWave(0);
         setCurrency(100);
         setHealth(20);
         setGameState('playing');
+        startNextWave();
     };
 
+    const startNextWave = useCallback(() => {
+        if(gameState === 'gameover') return;
+        setGameState('playing');
+        setWave(w => w + 1);
+        setWaveSpawning(true);
+    }, [gameState]);
+
+    useEffect(() => {
+        if (waveSpawning) {
+            const enemyCount = 5 + wave * 2;
+            const enemyHealth = 100 + wave * 20;
+            let spawnedCount = 0;
+
+            const spawnInterval = setInterval(() => {
+                if (spawnedCount < enemyCount) {
+                    setEnemies(e => [...e, { id: Date.now() + spawnedCount, pathProgress: 0, health: enemyHealth, maxHealth: enemyHealth }]);
+                    spawnedCount++;
+                } else {
+                    clearInterval(spawnInterval);
+                    setWaveSpawning(false);
+                }
+            }, 500);
+
+            return () => clearInterval(spawnInterval);
+        }
+    }, [waveSpawning, wave]);
+    
     const handleGridClick = (x: number, y: number) => {
-        if (gameState !== 'playing' || !selectedTower) return;
-        if (PATH.some(([px, py]) => px === x && py === y)) return;
+        if (gameState !== 'playing' && gameState !== 'wave_over') return;
+        if (!selectedTower) return;
+        if (PATH_COORDS.some(([px, py]) => px === x && py === y)) return;
         if (towers.some(t => t.x === x && t.y === y)) return;
 
-        const cost = 50;
-        if (currency >= cost) {
-            setCurrency(c => c - cost);
-            setTowers(t => [...t, { x, y, range: 3, fireRate: 1000, lastFired: 0 }]);
+        const spec = TOWER_SPECS[selectedTower];
+        if (currency >= spec.cost) {
+            setCurrency(c => c - spec.cost);
+            setTowers(t => [...t, { id: Date.now(), x, y, type: selectedTower, ...spec, lastFired: 0 }]);
         }
     };
-    
-    const gameTick = useCallback(() => {
+
+    const gameLoop = useCallback(() => {
         if (gameState !== 'playing') return;
 
         const now = Date.now();
-        
-        // Tower Firing
-        setTowers(towers.map(tower => {
-            if (now - tower.lastFired > tower.fireRate) {
-                 const targets = enemies.filter(enemy => {
-                    const dx = enemy.x - (tower.x * CELL_SIZE + CELL_SIZE/2);
-                    const dy = enemy.y - (tower.y * CELL_SIZE + CELL_SIZE/2);
-                    return Math.sqrt(dx*dx + dy*dy) < tower.range * CELL_SIZE;
-                 });
+        const newProjectiles: Projectile[] = [];
 
-                 if (targets.length > 0) {
-                     setEnemies(currentEnemies => currentEnemies.map(e => e.id === targets[0].id ? {...e, health: e.health - 25} : e));
-                     return {...tower, lastFired: now};
-                 }
+        // Tower Firing
+        setTowers(currentTowers => currentTowers.map(tower => {
+            if (now - tower.lastFired > tower.fireRate) {
+                const towerCenterX = tower.x * CELL_SIZE + CELL_SIZE / 2;
+                const towerCenterY = tower.y * CELL_SIZE + CELL_SIZE / 2;
+                
+                let bestTarget: Enemy | null = null;
+                let maxProgress = -1;
+
+                enemies.forEach(enemy => {
+                    const enemyCoords = pathRef.current?.getPointAtLength(enemy.pathProgress);
+                    if (enemyCoords) {
+                        const dist = Math.hypot(enemyCoords.x - towerCenterX, enemyCoords.y - towerCenterY);
+                        if (dist < tower.range * CELL_SIZE && enemy.pathProgress > maxProgress) {
+                            maxProgress = enemy.pathProgress;
+                            bestTarget = enemy;
+                        }
+                    }
+                });
+
+                if (bestTarget) {
+                    const targetCoords = pathRef.current?.getPointAtLength(bestTarget.pathProgress);
+                    if (targetCoords) {
+                        newProjectiles.push({
+                            id: Date.now() + Math.random(),
+                            from: { x: towerCenterX, y: towerCenterY },
+                            to: { x: targetCoords.x, y: targetCoords.y }
+                        });
+
+                        setEnemies(currentEnemies => currentEnemies.map(e => {
+                            if (e.id === bestTarget!.id) {
+                                return { ...e, health: e.health - tower.damage };
+                            }
+                            return e;
+                        }));
+                        return { ...tower, lastFired: now };
+                    }
+                }
             }
             return tower;
         }));
+        
+        if (newProjectiles.length > 0) {
+            setProjectiles(p => [...p, ...newProjectiles]);
+            setTimeout(() => {
+                setProjectiles(current => current.filter(p => !newProjectiles.find(np => np.id === p.id)));
+            }, 100);
+        }
 
-        // Enemy movement
-        setEnemies(currentEnemies => {
-            const newEnemies = currentEnemies.map(enemy => {
-                if (enemy.pathIndex >= PATH.length - 1) {
-                    setHealth(h => h - 1);
-                    return null;
-                }
-                const nextPathIndex = enemy.pathIndex + 1;
-                const [targetX, targetY] = PATH[nextPathIndex];
-                const newX = targetX * CELL_SIZE + CELL_SIZE/2;
-                const newY = targetY * CELL_SIZE + CELL_SIZE/2;
-
-                return { ...enemy, pathIndex: nextPathIndex, x: newX, y: newY };
-            }).filter((e): e is Enemy => e !== null && e.health > 0);
-            return newEnemies;
-        });
-
-        // Wave management
-        if (enemies.length === 0) {
-            setWave(w => w + 1);
-            const newEnemies: Enemy[] = [];
-            for (let i = 0; i < 5 + wave * 2; i++) {
-                newEnemies.push({ id: Date.now() + i, pathIndex: 0, x: PATH[0][0]*CELL_SIZE+CELL_SIZE/2, y: PATH[0][1]*CELL_SIZE+CELL_SIZE/2, health: 100 + wave * 20 });
+        // Enemy Logic
+        const enemiesEscaped: number[] = [];
+        const enemiesDefeated: number[] = [];
+        
+        const updatedEnemies = enemies.map(enemy => {
+            if (enemy.health <= 0) {
+                enemiesDefeated.push(enemy.id);
+                return null;
             }
-            // Stagger spawn
-            const staggeredEnemies: Enemy[] = [];
-            newEnemies.forEach((enemy, i) => {
-                setTimeout(() => setEnemies(e => [...e, enemy]), i * 500);
-            });
+            const newPathProgress = enemy.pathProgress + ENEMY_SPEED;
+            if (newPathProgress >= pathLength.current) {
+                enemiesEscaped.push(enemy.id);
+                return null;
+            }
+            return { ...enemy, pathProgress: newPathProgress };
+        }).filter((e): e is Enemy => e !== null);
+
+        setEnemies(updatedEnemies);
+        
+        if (enemiesEscaped.length > 0) {
+            setHealth(h => Math.max(0, h - enemiesEscaped.length));
+        }
+        if (enemiesDefeated.length > 0) {
+            setCurrency(c => c + enemiesDefeated.length * 10);
         }
         
-        if (health <= 1) {
+        // State checks
+        if (updatedEnemies.length === 0 && !waveSpawning) {
+            setGameState('wave_over');
+        }
+
+        if (health - enemiesEscaped.length <= 0) {
             setGameState('gameover');
             updateScore(21, score);
         }
 
-    }, [gameState, towers, enemies, wave, health, score, updateScore]);
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+    }, [gameState, enemies, waveSpawning, health, score, updateScore]);
 
     useEffect(() => {
+        if(pathRef.current) pathLength.current = pathRef.current.getTotalLength();
+        
         if (gameState === 'playing') {
-            const interval = setInterval(gameTick, 500);
-            return () => clearInterval(interval);
+            gameLoopRef.current = requestAnimationFrame(gameLoop);
         }
-    }, [gameState, gameTick]);
-
+        return () => {
+            if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+        }
+    }, [gameState, gameLoop]);
+    
+    const EnemyComponent = ({ enemy }: { enemy: Enemy }) => {
+        if (!pathRef.current) return null;
+        const point = pathRef.current.getPointAtLength(enemy.pathProgress);
+        const healthPercentage = (enemy.health / enemy.maxHealth) * 100;
+        return (
+            <div className="absolute transition-all duration-100 ease-linear" style={{ transform: `translate(${point.x}px, ${point.y}px)` }}>
+                <div className="absolute -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 bg-fuchsia-500 rounded-full" />
+                    <div className="absolute -top-2 w-4 h-1 bg-gray-500 rounded-full overflow-hidden">
+                        <div className="h-full bg-red-500" style={{ width: `${healthPercentage}%` }} />
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="flex flex-col lg:flex-row items-center gap-4 w-full">
             <div className="relative bg-black border-2 border-primary/50 overflow-hidden" style={{ width: GRID_SIZE * CELL_SIZE, height: GRID_SIZE * CELL_SIZE, boxShadow: '0 0 20px hsl(var(--primary)/0.5), inset 0 0 15px hsl(var(--primary)/0.3)'}}>
                  {(gameState === 'start' || gameState === 'gameover') && (
-                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 text-white">
-                        <h2 className="text-4xl font-bold font-headline">{gameState === 'gameover' ? 'Game Over' : 'Tower Defense'}</h2>
-                        <p>Score: {score}</p>
-                        <Button onClick={startGame} className="mt-4" variant="outline">
-                            {gameState === 'gameover' ? 'Play Again' : 'Start Game'}
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 text-white gap-4">
+                        <h2 className="text-4xl font-bold font-headline">{gameState === 'gameover' ? 'Core Integrity Failure' : 'Tower Defense 2077'}</h2>
+                        <p>Final Score: {score}</p>
+                        <Button onClick={resetGame} size="lg" className="mt-4">
+                            {gameState === 'gameover' ? 'Re-initialize' : 'Start Defense'}
                         </Button>
                     </div>
                 )}
+                <svg width="100%" height="100%" className="absolute inset-0">
+                    <path ref={pathRef} d={SVG_PATH} stroke="hsl(var(--primary)/0.2)" strokeWidth="20" fill="none" />
+                    {projectiles.map(p => (
+                        <line key={p.id} x1={p.from.x} y1={p.from.y} x2={p.to.x} y2={p.to.y} stroke="hsl(var(--primary))" strokeWidth="2" style={{filter: 'drop-shadow(0 0 4px hsl(var(--primary)))'}}/>
+                    ))}
+                </svg>
+
                 <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`, gridTemplateRows: `repeat(${GRID_SIZE}, 1fr)` }}>
                     {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
                         const x = i % GRID_SIZE;
                         const y = Math.floor(i / GRID_SIZE);
-                        const isPath = PATH.some(([px, py]) => px === x && py === y);
-                        return <div key={i} className={cn("border border-primary/10", isPath && 'bg-primary/10')} onClick={() => handleGridClick(x, y)} />;
+                        return <div key={i} className="hover:bg-primary/10 transition-colors" onClick={() => handleGridClick(x, y)} />;
                     })}
                 </div>
-                {PATH.slice(0, -1).map(([x1, y1], i) => {
-                    const [x2, y2] = PATH[i+1];
-                    return <div key={i} className="absolute bg-primary/30 z-0" style={{ left: Math.min(x1,x2)*CELL_SIZE, top: Math.min(y1,y2)*CELL_SIZE, width: (Math.abs(x1-x2)+1)*CELL_SIZE, height: (Math.abs(y1-y2)+1)*CELL_SIZE }} />
-                })}
-                {towers.map((tower, i) => <div key={i} className="absolute flex items-center justify-center" style={{ left: tower.x * CELL_SIZE, top: tower.y * CELL_SIZE, width: CELL_SIZE, height: CELL_SIZE }}><TowerDefenseIcon className="w-5 h-5 text-cyan-400" /></div>)}
-                {enemies.map(enemy => <div key={enemy.id} className="absolute w-4 h-4 bg-fuchsia-500 rounded-full transition-all duration-500 ease-linear" style={{ left: enemy.x - 8, top: enemy.y - 8, opacity: enemy.health / (100 + wave * 20) }} />)}
+                
+                {towers.map((tower, i) => (
+                    <div key={i} className="absolute flex items-center justify-center" style={{ left: tower.x * CELL_SIZE, top: tower.y * CELL_SIZE, width: CELL_SIZE, height: CELL_SIZE }}>
+                        <TowerDefenseIcon className="w-6 h-6 text-cyan-400" style={{filter: 'drop-shadow(0 0 5px hsl(var(--primary)))'}}/>
+                    </div>
+                ))}
+                
+                {enemies.map(enemy => <EnemyComponent key={enemy.id} enemy={enemy} />)}
             </div>
              <div className="w-full lg:w-64 space-y-4">
                 <div className="p-4 bg-muted/80 rounded-lg text-center">
@@ -167,13 +272,26 @@ export const TowerDefense = () => {
                     </h3>
                     <p className="text-2xl font-mono">{highScore}</p>
                 </div>
-                 <div className="p-4 bg-muted/80 rounded-lg">
-                    <h3 className="text-lg font-bold text-center mb-2">Build</h3>
-                    <Button className="w-full" variant={selectedTower === 'laser' ? 'default' : 'outline'}>
-                        <TowerDefenseIcon className="mr-2"/> Laser Tower (50)
+                
+                {gameState === 'wave_over' && (
+                    <Button onClick={startNextWave} className="w-full" size="lg">
+                        Start Wave {wave + 1}
+                    </Button>
+                )}
+
+                 <div className={cn("p-4 bg-muted/80 rounded-lg", gameState !== 'wave_over' && gameState !== 'playing' && 'opacity-50')}>
+                    <h3 className="text-lg font-bold text-center mb-2">Build Defenses</h3>
+                    <Button 
+                        className="w-full" 
+                        variant={selectedTower === 'laser' ? 'default' : 'outline'}
+                        disabled={gameState !== 'wave_over' && gameState !== 'playing'}
+                    >
+                        <TowerDefenseIcon className="mr-2"/> Laser Tower ({TOWER_SPECS.laser.cost})
                     </Button>
                 </div>
             </div>
         </div>
     );
 };
+
+    
